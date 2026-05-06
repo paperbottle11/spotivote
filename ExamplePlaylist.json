@@ -1,0 +1,36 @@
+{
+    "collaborative": false,
+    "description": "",
+    "external_urls": {
+        "spotify": "https://open.spotify.com/playlist/7APR2GKM3MVHa3T3uLwcOX"
+    },
+    "href": "https://api.spotify.com/v1/playlists/7APR2GKM3MVHa3T3uLwcOX",
+    "id": "7APR2GKM3MVHa3T3uLwcOX",
+    "images": [
+        {
+            "height": null,
+            "url": "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84369a4c0597605328d17d6cc4",
+            "width": null
+        }
+    ],
+    "name": "Spotivote",
+    "owner": {
+        "display_name": "Jayden",
+        "external_urls": {
+            "spotify": "https://open.spotify.com/user/paperbottle11"
+        },
+        "href": "https://api.spotify.com/v1/users/paperbottle11",
+        "id": "paperbottle11",
+        "type": "user",
+        "uri": "spotify:user:paperbottle11"
+    },
+    "primary_color": null,
+    "public": true,
+    "snapshot_id": "AAAACAR0uBDfWblKNeRkON75UQ4LkoWd",
+    "items": {
+        "href": "https://api.spotify.com/v1/playlists/7APR2GKM3MVHa3T3uLwcOX/items",
+        "total": 1
+    },
+    "type": "playlist",
+    "uri": "spotify:playlist:7APR2GKM3MVHa3T3uLwcOX"
+}

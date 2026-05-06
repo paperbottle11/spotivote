@@ -1,0 +1,63 @@
+<html>
+	<head>
+		<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400&family=Ubuntu:wght@700&display=swap" rel="stylesheet">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="static/styles.css">
+	</head>
+<body>
+	<div class="section" id="left-bar">
+		<div class="login">
+			{% if "given_name" in session %}
+				<img id="pfp" src="{{ session['picture'] }}" alt="{{ session['name'] }}" />
+				<div class="profile">
+					<span id="name">{{ session['name'] }}</span><br>
+					<a id="loginout" href="/logout">Logout</a>
+				</div>
+			{% else %}
+				<img id="pfp" src="static/user-circle.png" alt="user cirlce">
+				<a id="loginout" class="login-text" href="/login">Sign in</a>
+			{% endif %}
+		</div>
+		<hr>
+		<div class="playlists">
+			{% if "given_name" in session %}
+				{% for id, playlist in user_playlists.items() %}
+					<a href="/?playlist_id={{ id }}" class="playlist-link">{{ playlist['name'] }}</a><br>
+				{% endfor %}
+			{% endif %}
+		</div>
+	</div>
+	<div class="section" id="main">
+		<div class="playlist">
+			<a href="https://open.spotify.com/playlist/{{ playlist_id }}" target="_blank">
+				<img id="playlist-image" src="{{ image_url }}" alt="Playlist Image">
+			</a>
+			<a id="playlist-name" href="https://open.spotify.com/playlist/{{ playlist_id }}" target="_blank">{{ name }}</a>
+		</div>
+		
+		<hr>
+		{% if "given_name" in session %}
+			<div class="search-outer">
+				<img class="search-icon" src="static/search.png" alt="search">
+				<input type="text" name="search" value="" placeholder="Search a song" id="search">
+				<div id="songList">
+				</div>
+			</div>
+			
+		{% endif %}
+		
+		<div id="songs-container">
+			
+		</div>
+	</div>
+
+	<input id="playlist-id" type="hidden" value="{{ playlist_id }}">
+
+	<script type="text/javascript" src="static/search.js"></script>
+	<script type="text/javascript" src="static/populate.js"></script>
+	<script>
+		update(playlist_id);
+	</script>
+</body>
+
+</html>

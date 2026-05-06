@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="../static/styles.css">
+</head>
+
+<body>
+    <div class="section" id="left-bar">
+		<div class="login">
+			{% if "sub" in session['google_id'] %}
+				<img id="pfp" src="{{ session['google_id']['picture'] }}" alt="{{ session['google_id']['name'] }}" />
+				<div class="profile">
+					<span id="name">{{ session['google_id']['name'] }}</span><br>
+					<a id="loginout" href="/logout">Logout</a>
+				</div>
+			{% else %}
+				<img id="pfp" src="static/user-circle.png" alt="user cirlce">
+				<a id="loginout" class="login-text" href="/login">Sign in</a>
+			{% endif %}
+		</div>
+		<hr>
+        <div class="playlist-list">
+			{% if "sub" in session['google_id'] and 'items' in user_playlists %}
+				{% for playlist in user_playlists['items'] %}
+                    <a href="/" class="playlist-item">
+                        <img class="playlist-image" src="{{ playlist['images'][0]['url'] }}" alt="Playlist Image">
+                        <p>{{ playlist['name'] }}</p>
+                    </a>
+				{% endfor %}
+			{% endif %}
+		</div>
+	</div>
+    <div class="section" id="main">
+        <div id="current-playlist">
+			{% if current_playlist %}
+                <a href="{{ current_playlist['playlist_url'] }}" target="_blank">
+                    <img id="current-playlist-image" src="{{ current_playlist['image_url'] }}" alt="Playlist Image">
+                    <p id="current-playlist-name">{{ current_playlist['name'] }}</p>
+                </a>
+            {% else %}
+                <p id="current-playlist-name" style="padding:5%; margin-left:auto; margin-right:auto; text-align:center;">Select a playlist</p>
+            {% endif %}
+		</div>
+    </div>
+</body>
+
+</html>
