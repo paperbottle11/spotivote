@@ -1,94 +1,75 @@
 {
-    "added_at": "2026-05-04T08: 30: 06Z",
-    "added_by": {
-        "external_urls": {
-            "spotify": "https:open.spotify.com/user/paperbottle11"
-        },
-        "href": "https:api.spotify.com/v1/users/paperbottle11",
-        "id": "paperbottle11",
-        "type": "user",
-        "uri": "spotify:user:paperbottle11"
-    },
-    "is_local": false,
-    "primary_color": null,
-    "item": {
-        "is_playable": true,
-        "explicit": true,
-        "type": "track",
-        "episode": false,
-        "track": true,
-        "album": {
-            "is_playable": true,
-            "type": "album",
-            "album_type": "album",
-            "href": "https:api.spotify.com/v1/albums/6CACyqngQWTOAM1UpAtco3",
-            "id": "6CACyqngQWTOAM1UpAtco3",
-            "images": [
-                {
-                    "height": 640,
-                    "url": "https:i.scdn.co/image/ab67616d0000b273ee92b5f6b7140df498166f1a",
-                    "width": 640
-                },
-                {
-                    "height": 300,
-                    "url": "https:i.scdn.co/image/ab67616d00001e02ee92b5f6b7140df498166f1a",
-                    "width": 300
-                },
-                {
-                    "height": 64,
-                    "url": "https:i.scdn.co/image/ab67616d00004851ee92b5f6b7140df498166f1a",
-                    "width": 64
-                }
-            ],
-            "name": "BEFORE I FORGET (DELUXE)",
-            "release_date": "2026-04-24",
-            "release_date_precision": "day",
-            "uri": "spotify:album:6CACyqngQWTOAM1UpAtco3",
-            "artists": [
-                {
-                    "external_urls": {
-                        "spotify": "https:open.spotify.com/artist/2tIP7SsRs7vjIcLrU85W8J"
-                    },
-                    "href": "https:api.spotify.com/v1/artists/2tIP7SsRs7vjIcLrU85W8J",
-                    "id": "2tIP7SsRs7vjIcLrU85W8J",
-                    "name": "The Kid LAROI",
-                    "type": "artist",
-                    "uri": "spotify:artist:2tIP7SsRs7vjIcLrU85W8J"
-                }
-            ],
-            "external_urls": {
-                "spotify": "https:open.spotify.com/album/6CACyqngQWTOAM1UpAtco3"
-            },
-            "total_tracks": 24
-        },
+    "album": {
+        "album_type": "single",
         "artists": [
             {
                 "external_urls": {
-                    "spotify": "https:open.spotify.com/artist/2tIP7SsRs7vjIcLrU85W8J"
+                    "spotify": "https://open.spotify.com/artist/138UAIyJocdHT5PpR0iTJE"
                 },
-                "href": "https:api.spotify.com/v1/artists/2tIP7SsRs7vjIcLrU85W8J",
-                "id": "2tIP7SsRs7vjIcLrU85W8J",
-                "name": "The Kid LAROI",
+                "href": "https://api.spotify.com/v1/artists/138UAIyJocdHT5PpR0iTJE",
+                "id": "138UAIyJocdHT5PpR0iTJE",
+                "name": "Thekidszn",
                 "type": "artist",
-                "uri": "spotify:artist:2tIP7SsRs7vjIcLrU85W8J"
+                "uri": "spotify:artist:138UAIyJocdHT5PpR0iTJE"
             }
         ],
-        "disc_number": 2,
-        "track_number": 3,
-        "duration_ms": 142693,
-        "external_ids": {
-            "isrc": "USSM12601337"
-        },
         "external_urls": {
-            "spotify": "https:open.spotify.com/track/0TQsdL44um3gas07wdLKt8"
+            "spotify": "https://open.spotify.com/album/1X8OCfFpxzcTDoS5NA5B2g"
         },
-        "href": "https:api.spotify.com/v1/tracks/0TQsdL44um3gas07wdLKt8",
-        "id": "0TQsdL44um3gas07wdLKt8",
-        "name": "I CONDEMN",
-        "uri": "spotify:track:0TQsdL44um3gas07wdLKt8",
-        "is_local": false
+        "href": "https://api.spotify.com/v1/albums/1X8OCfFpxzcTDoS5NA5B2g",
+        "id": "1X8OCfFpxzcTDoS5NA5B2g",
+        "images": [
+            {
+                "url": "https://i.scdn.co/image/ab67616d0000b2738f994e18211fa8d4960e0ec4",
+                "width": 640,
+                "height": 640
+            },
+            {
+                "url": "https://i.scdn.co/image/ab67616d00001e028f994e18211fa8d4960e0ec4",
+                "width": 300,
+                "height": 300
+            },
+            {
+                "url": "https://i.scdn.co/image/ab67616d000048518f994e18211fa8d4960e0ec4",
+                "width": 64,
+                "height": 64
+            }
+        ],
+        "is_playable": true,
+        "name": "I HATE LA GIRLS",
+        "release_date": "2025-06-20",
+        "release_date_precision": "day",
+        "total_tracks": 3,
+        "type": "album",
+        "uri": "spotify:album:1X8OCfFpxzcTDoS5NA5B2g"
     },
-    "video_thumbnail": {
-        "url": null
-    }
+    "artists": [
+        {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/138UAIyJocdHT5PpR0iTJE"
+            },
+            "href": "https://api.spotify.com/v1/artists/138UAIyJocdHT5PpR0iTJE",
+            "id": "138UAIyJocdHT5PpR0iTJE",
+            "name": "Thekidszn",
+            "type": "artist",
+            "uri": "spotify:artist:138UAIyJocdHT5PpR0iTJE"
+        }
+    ],
+    "disc_number": 1,
+    "duration_ms": 131869,
+    "explicit": true,
+    "external_ids": {
+        "isrc": "USLD91778289"
+    },
+    "external_urls": {
+        "spotify": "https://open.spotify.com/track/1STBvJ0CbDW8z2011oDsGQ"
+    },
+    "href": "https://api.spotify.com/v1/tracks/1STBvJ0CbDW8z2011oDsGQ",
+    "id": "1STBvJ0CbDW8z2011oDsGQ",
+    "is_local": false,
+    "is_playable": true,
+    "name": "I HATE LA GIRLS",
+    "track_number": 1,
+    "type": "track",
+    "uri": "spotify:track:1STBvJ0CbDW8z2011oDsGQ"
 }

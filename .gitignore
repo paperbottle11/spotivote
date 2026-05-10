@@ -1,3 +1,4 @@
 .env
+.cache
 cred.json
 oauth.json

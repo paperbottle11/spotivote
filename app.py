@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 import json
 from functools import wraps
+from datetime import datetime
+from time import time
 
 from flask import *
 
@@ -19,7 +21,30 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy import *
 
-class spotify_data():
+class FirestoreCacheHandler(spotipy.cache_handler.CacheHandler):
+    def __init__(self, db, session):
+        self.db = db
+        self.session = session
+
+    def get_cached_token(self):
+        token_info = None
+        try:
+            doc = self.db.collection("users").document(self.session["google_id"]["sub"]).get()
+            if doc.exists:
+                # Retrieve the token_info dictionary from Firestore
+                token_info = doc.to_dict().get('spotify_token')
+        except Exception as e:
+            print(f"Error retrieving token from Firestore: {e}")
+        return token_info
+
+    def save_token_to_cache(self, token_info):
+        try:
+            # Save the full token_info
+            self.db.collection("users").document(self.session["google_id"]["sub"]).set({'spotify_token': token_info}, merge=True)
+        except Exception as e:
+            print(f"Error saving token to Firestore: {e}")
+
+class SpotifySearchResults():
     def __init__(self,name):
         search_str = name
         sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
@@ -44,6 +69,12 @@ def login_required(function):
         
     return wrapper
 
+def get_playlist(playlists, playlist_id):
+    for playlist in playlists['items']:
+        if playlist['id'] == playlist_id:
+            return playlist
+    return None
+
 load_dotenv()
 
 # Flask app setup
@@ -64,31 +95,8 @@ flow = Flow.from_client_secrets_file(
 cred = credentials.Certificate("cred.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
-
+    
 # Spotify OAuth setup
-class FirestoreCacheHandler(spotipy.cache_handler.CacheHandler):
-    def __init__(self, db, session):
-        self.db = db
-        self.session = session
-
-    def get_cached_token(self):
-        token_info = None
-        try:
-            doc = self.db.collection("users").document(self.session["google_id"]["sub"]).get()
-            if doc.exists:
-                # Retrieve the token_info dictionary from Firestore
-                token_info = doc.to_dict().get('spotify_token')
-        except Exception as e:
-            print(f"Error retrieving token from Firestore: {e}")
-        return token_info
-
-    def save_token_to_cache(self, token_info):
-        try:
-            # Save the full token_info
-            self.db.collection("users").document(self.session["google_id"]["sub"]).set({'spotify_token': token_info}, merge=True)
-        except Exception as e:
-            print(f"Error saving token to Firestore: {e}")
-
 sp_cache_handler = FirestoreCacheHandler(db, session)
 sp_oauth = SpotifyOAuth(client_id=os.getenv("SPOTIPY_CLIENT_ID"),
                         client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
@@ -97,9 +105,11 @@ sp_oauth = SpotifyOAuth(client_id=os.getenv("SPOTIPY_CLIENT_ID"),
                         cache_handler=sp_cache_handler,
                         show_dialog=True)
 
-@app.route("/", methods=["GET"])
+@app.route("/", methods=["GET"]) # Main app page
 def root():
     user_playlists = {}
+    current_playlist = {}
+    current_playlist_exists = None
     
     if "sub" in session.get("google_id", {}): # If user logged in
         token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
@@ -107,155 +117,239 @@ def root():
             sp = spotipy.Spotify(auth=token_info['access_token'])
             user_playlists = sp.current_user_playlists()
 
-    return render_template("index.html", session=session, user_playlists=user_playlists, current_playlist={}) # "name": "Spotivote", "playlist_url": "", "image_url": ""
+            if "playlist-id" in request.args:  # If playlist-id query provided, get playlist info to display
+                playlist_id = request.args.get('playlist-id')
+                playlist_ref = db.collection('playlists').document(playlist_id)
+                current_playlist_exists = playlist_ref.get().exists
+                current_playlist = get_playlist(user_playlists, playlist_id)
 
-    current_playlist_id = "7APR2GKM3MVHa3T3uLwcOX"
+    visited = request.cookies.get("visited_today")
+    response = make_response(render_template("index.html", session=session, user_playlists=user_playlists, current_playlist=current_playlist, current_playlist_exists=current_playlist_exists, show_popup=(visited == None)))
+    if visited is None:
+        response.set_cookie("visited_today", "true", max_age=60*60*24) # show popup once per 24 hours
+    return response
 
-    if "playlist_id" in request.args:
-        current_playlist_id = request.args.get('playlist_id')
-    
-    current_playlist = sp.playlist(current_playlist_id)
-    image_url = current_playlist['images'][0]['url'] if current_playlist['images'] else None
-    name = current_playlist['name']
-    user_playlists = {}
-    if "sub" in session: # If user logged in
-        users = db.collection("users").document(session["sub"]).get()
-        if not users.exists: # Create user if not found
-            db.collection("users").document(session["sub"]).set({"name": session["name"], "profile_picture_url": session["picture"], "playlists": []})
-        else: # Get user playlists
-            playlists = users.to_dict().get("playlists", [])
-            for playlist_id in playlists:
-                playlist = sp.playlist(playlist_id)
-                user_playlists[playlist_id] = {"name": playlist["name"], "image_url": playlist["images"][0]["url"] if playlist["images"] else None}
-
-    return render_template("base.html",session=session, image_url=image_url, name=name, playlist_id=current_playlist_id, user_playlists=user_playlists)
-
-@app.route("/songs", methods=["GET"])
+@app.route("/songs", methods=["GET"]) # Get playlist songs and the user's votes
+@login_required
 def songs():
-    if 'playlist_id' in request.args:
-        playlist_id = request.args.get('playlist_id')
+    if 'playlist-id' in request.args:
+        token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
+        if token_info:
+            playlist_id = request.args.get('playlist-id')
+            sp = spotipy.Spotify(auth=token_info['access_token'])
+            playlist = sp.playlist(playlist_id)
 
-        song_ids = []
-        songs_list = []
-        for track in sp.playlist_tracks(playlist_id)["items"]:
-            id = track["item"]["id"]
-            track_name = track["item"]["name"]
-            track_artist = track["item"]["artists"][0]["name"]
-            track_album = track["item"]["album"]["name"]
-            cover_url = track["item"]["album"]["images"][0]["url"]
-        
-            song_ids.append(id)
-            songs_list.append({"id": id, "name": track_name, "artist": track_artist, "album": track_album, "cover_url": cover_url})
-        
-        playlist_ref = db.collection('playlists').document(playlist_id)
-        songs_ref = playlist_ref.collection('songs')
-        
-
-        for song in songs_list:
-            song_doc = songs_ref.document(song["id"]).get()
-            if song_doc.exists:
-                data = song_doc.to_dict()
-                if "sub" in session:
-                    if session["sub"] in data["upvote_subs"]:
+            playlist_ref = db.collection('playlists').document(playlist_id)
+            songs_list = []                    
+            for track in playlist['items']['items']:
+                id = track["item"]["id"]
+                track_name = track["item"]["name"]
+                track_artist = track["item"]["artists"][0]["name"]
+                track_album = track["item"]["album"]["name"]
+                cover_url = track["item"]["album"]["images"][0]["url"]
+                explicit = track["item"]["explicit"]
+                songs_list.append({"id": id, "name": track_name, "artist": track_artist, "album": track_album, "cover_url": cover_url, "added_at": track["added_at"], "explicit": explicit})
+            
+            songs_ref = playlist_ref.collection('songs')
+            for song in songs_list:
+                song_doc = songs_ref.document(song["id"]).get()
+                if song_doc.exists:
+                    data = song_doc.to_dict()
+                    if session["google_id"]["sub"] in data["upvote_subs"]:
                         song["vote"] = 1
-                    elif session["sub"] in data["downvote_subs"]:
+                    elif session["google_id"]["sub"] in data["downvote_subs"]:
                         song["vote"] = -1
                     else:
                         song["vote"] = 0
+
+                    song["add_profile_picture"] = data["add_profile_picture"]
+                    song["add_user_name"] = data["add_user_name"]
+                    song["added_at"] = data["added_at"].timestamp()
+                    song["user_added"] = data["add_sub"] == session["google_id"]["sub"] or data["add_sub"] == ""
                 else:
+                    playlist_ref.update({"length": firestore.Increment(1)})
+                    added_date = datetime.fromisoformat(song["added_at"].replace("Z", "+00:00"))
+                    songs_ref.document(song["id"]).set({"song_name": song["name"], "song_artist": song["artist"], "upvotes": 0, "upvote_subs": [], "downvotes": 0, "downvote_subs": [], "added_at": added_date, "add_sub": "", "add_user_name": "", "add_profile_picture": ""})
+                    song["added_at"] = added_date.timestamp()
                     song["vote"] = 0
-                song["add_profile_picture"] = data["add_profile_picture"]
-                song["add_sub"] = data["add_sub"]
-                song["add_user_name"] = data["add_user_name"]
-                song["date_added"] = data["date_added"].timestamp()
-            else:
-                songs_ref.document(song["id"]).set({"song_name": song["name"], "song_artist": song["artist"], "upvotes": 0, "upvote_subs": [], "downvotes": 0, "downvote_subs": [], "date_added": firestore.SERVER_TIMESTAMP, "add_sub": "", "add_user_name": "", "add_profile_picture": ""})
-                song["vote"] = 0
 
-        for doc in songs_ref.stream():
-            if doc.id not in song_ids:
-                songs_ref.document(doc.id).delete()
+            return jsonify(songs_list), 200
+        
+        return jsonify({"message": "Unable to update Spotify token"}), 401
+    return jsonify("Error: Missing playlist-id query"), 400
 
-        return json.dumps(songs_list)
-    return "Error: Missing playlist_id query"
-
-@app.route('/add', methods=["POST"])
-def add():
-    if "playlist_id" in request.args and "track_id" in request.args:
-        track_id = request.args.get('track_id')
-        track_uris = [f'spotify:track:{track_id}']  # Replace with the track URIs
-        list_id = request.args.get('playlist_id')
-        sp.playlist_add_items(list_id, track_uris)
-
-        track_info = sp.track(track_id)
-
-        song_name = track_info['name']
-        song_artist = track_info['artists'][0]['name']
-
-        playlist_ref = db.collection('playlists').document(list_id)
-        songs_ref = playlist_ref.collection('songs')
-
-        songs_ref.document(track_id).set({"song_name": song_name, "song_artist": song_artist, "upvotes": 0, "upvote_subs": [], "downvotes": 0, "downvote_subs": [], "date_added": firestore.SERVER_TIMESTAMP, "add_sub": session["sub"], "add_user_name": session["name"], "add_profile_picture": session["picture"]})
-
-        return "success"
-    return "Error: Missing playlist_id or track_id query"
-
-@app.route('/upvote', methods=["POST"])
-def upvote():
-    request_data = request.get_json()
-    if "playlist_id" in request_data and "track_id" in request_data:
-        track_id = request_data['track_id']
-        list_id = request_data['playlist_id']
-
-        playlist_ref = db.collection('playlists').document(list_id)
-        songs_ref = playlist_ref.collection('songs')
-        song_doc = songs_ref.document(track_id).get()
-        if song_doc.exists:
-            song_data = song_doc.to_dict()
-            if session["sub"] not in song_data["upvote_subs"]:
-                songs_ref.document(track_id).update({"upvotes": firestore.Increment(1), "upvote_subs": firestore.ArrayUnion([session["sub"]])})
-                if session["sub"] in song_data["downvote_subs"]:
-                    songs_ref.document(track_id).update({"downvotes": firestore.Increment(-1), "downvote_subs": firestore.ArrayRemove([session["sub"]])})
-                return jsonify({"message": "upvote added"}), 200
-            else:
-                songs_ref.document(track_id).update({"upvotes": firestore.Increment(-1), "upvote_subs": firestore.ArrayRemove([session["sub"]])})
-                return jsonify({"message": "upvote removed"}), 200
-        else:
-            return jsonify({"message": "Song not found"}), 400
-    return jsonify({"message": "Missing data"}), 400
-
-@app.route('/downvote', methods=["POST"])
-def downvote():
-    request_data = request.get_json()
-    if "playlist_id" in request.args and "track_id" in request.args:
-        track_id = request.args.get('track_id')
-        list_id = request.args.get('playlist_id')
-
-        playlist_ref = db.collection('playlists').document(list_id)
-        songs_ref = playlist_ref.collection('songs')
-        song_doc = songs_ref.document(track_id).get()
-        if song_doc.exists:
-            data = song_doc.to_dict()
-            if session["sub"] not in data["downvote_subs"]: # if user has not already downvoted, add downvote
-                songs_ref.document(track_id).update({"downvotes": firestore.Increment(1), "downvote_subs": firestore.ArrayUnion([session["sub"]])})
-                if session["sub"] in data["upvote_subs"]:
-                    songs_ref.document(track_id).update({"upvotes": firestore.Increment(-1), "upvote_subs": firestore.ArrayRemove([session["sub"]])})
-                return jsonify({"message": "downvote added"}), 200
-            else: # if user has already downvoted, remove downvote
-                songs_ref.document(track_id).update({"downvotes": firestore.Increment(-1), "downvote_subs": firestore.ArrayRemove([session["sub"]])})
-                return jsonify({"message": "downvote removed"}), 200
-        else:
-            return jsonify({"message": "Song not found"}), 400
-    return jsonify({"message": "Missing data"}), 400
+@app.route("/create-playlist", methods=["GET"]) # Create playlist in database
+@login_required
+def create_playlist():
+    if "playlist-id" in request.args:
+        playlist_id = request.args.get("playlist-id")
+        if "playlist-name" in request.args:
+            playlist_name = request.args.get("playlist-name")
+            playlist_ref = db.collection("playlists").document(playlist_id)
+            if not playlist_ref.get().exists:
+                playlist_ref.set({"playlist_name": playlist_name, "date_created": firestore.SERVER_TIMESTAMP, "length": 0})
+    
+    return redirect("/?playlist-id=" + playlist_id)
 
 @app.route('/search', methods=["GET"]) # Song search
 def search():
-    try:
-        search = request.args.get('q')
-        data = spotify_data(search)
-        return json.dumps(data.veri)
-    except:
-        pass
+    if "q" in request.args:
+        try:
+            sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
+            result = sp.search(request.args.get('q'), 5)
+            song_data = {}
+            for i in range(5):
+                song = {}
+                song["id"] = result['tracks']['items'][i]['id']
+                song["cover_img"] = result['tracks']['items'][i]['album']['images'][0]['url']
+                song["name"] = result['tracks']['items'][i]['name']
+                song["artist"] = result['tracks']['items'][i]['album']['artists'][0]['name']
+                song["explicit"] = result['tracks']['items'][i]['explicit']
+                song_data[song["id"]] = song
+            return json.dumps(song_data), 200
+        except Exception as e:
+            print("Error during spotify song search: ", e)
+            return jsonify({"message": "An error occurred during search"}), 500
+    return jsonify({"message": "Missing search query (q)"}), 400
+
+@app.route('/add', methods=["POST"]) # Add song to playlist
+@login_required
+def add():
+    data = request.get_json()
+    if "playlist_id" in data:
+        playlist_id = data['playlist_id']
+        if "track_id" in data:
+            track_id = data['track_id']
+            token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
+            if token_info:
+                sp = spotipy.Spotify(auth=token_info['access_token'])
+                track_info = sp.track(track_id)
+
+                song_name = track_info['name']
+                song_artist = track_info['artists'][0]['name']
+                song_album = track_info['album']['name']
+                cover_url = track_info['album']['images'][0]['url']
+                explicit = track_info['explicit']
+
+                playlist_ref = db.collection('playlists').document(playlist_id)
+                song_ref = playlist_ref.collection('songs').document(track_id)
+                if not song_ref.get().exists: # Add song if not already in database
+                    song_ref.set({
+                        "song_name": song_name,
+                        "song_artist": song_artist,
+                        "upvotes": 0, "upvote_subs": [],
+                        "downvotes": 0, "downvote_subs": [],
+                        "added_at": firestore.SERVER_TIMESTAMP,
+                        "add_sub": session["google_id"]["sub"],
+                        "add_user_name": session["google_id"]["name"],
+                        "add_profile_picture": session["google_id"]["picture"]
+                    })
+
+                    playlist_ref.update({"length": firestore.Increment(1)})
+                    playlist_length = playlist_ref.get().to_dict().get("length")
+                    sp.playlist_add_items(playlist_id, [track_id])
+
+                    # Return song data needed to create a song div
+                    return jsonify({
+                        "message": "Song added to playlist", 
+                            "song_data": {
+                                "playlist_id": playlist_id, 
+                                "id": track_id, "number": playlist_length, 
+                                "name": song_name, "artist": song_artist, 
+                                "album": song_album, "cover_url": cover_url, 
+                                "added_at": song_ref.get().to_dict().get("added_at").timestamp(),
+                                "explicit": explicit,
+                                "user_added": True,
+                                "add_user_name": session["google_id"]["name"],
+                                "add_profile_picture": session["google_id"]["picture"]
+                            }
+                        }), 200
+
+                return jsonify({"message": "Song already added to playlist"}), 200
+            return jsonify({"message": "Unable to update Spotify token"}), 401
+        return jsonify({"message": "Missing track_id"}), 400
+    return jsonify({"message": "Missing playlist_id"}), 400
+
+@app.route('/upvote', methods=["POST"]) # Upvote a song
+def upvote():
+    data = request.get_json()
+    if "playlist_id" in data:
+        playlist_id = data['playlist_id']
+        if "track_id" in data:
+            track_id = data['track_id']
+            songs_ref = db.collection('playlists').document(playlist_id).collection('songs')
+            song_doc = songs_ref.document(track_id).get()
+            
+            if song_doc.exists:
+                song_data = song_doc.to_dict()
+                if session["google_id"]["sub"] not in song_data["upvote_subs"]:  # if user has not already upvoted, add upvote
+                    songs_ref.document(track_id).update({"upvotes": firestore.Increment(1), "upvote_subs": firestore.ArrayUnion([session["google_id"]["sub"]])})
+
+                    if session["google_id"]["sub"] in song_data["downvote_subs"]:  # if user has already downvoted, remove downvote
+                        songs_ref.document(track_id).update({"downvotes": firestore.Increment(-1), "downvote_subs": firestore.ArrayRemove([session["google_id"]["sub"]])})
+                    return jsonify({"message": "upvote added"}), 200
+                
+                else: # if user has already upvoted, remove upvote
+                    songs_ref.document(track_id).update({"upvotes": firestore.Increment(-1), "upvote_subs": firestore.ArrayRemove([session["google_id"]["sub"]])})
+                    return jsonify({"message": "upvote removed"}), 200
+                
+            return jsonify({"message": "Song not found"}), 400
+        return jsonify({"message": "Missing track-id"}), 400
+    return jsonify({"message": "Missing playlist-id"}), 400
+
+@app.route('/downvote', methods=["POST"]) # Downvote a song
+def downvote():
+    data = request.get_json()
+    if "playlist_id" in data:
+        playlist_id = data['playlist_id']
+        if "track_id" in data:
+            track_id = data['track_id']
+            songs_ref = db.collection('playlists').document(playlist_id).collection('songs')
+            song_doc = songs_ref.document(track_id).get()
+            
+            if song_doc.exists:
+                song_data = song_doc.to_dict()
+                if session["google_id"]["sub"] not in song_data["downvote_subs"]: # if user has not already downvoted, add downvote
+                    songs_ref.document(track_id).update({"downvotes": firestore.Increment(1), "downvote_subs": firestore.ArrayUnion([session["google_id"]["sub"]])})
+
+                    if session["google_id"]["sub"] in song_data["upvote_subs"]:  # if user has already upvoted, remove upvote
+                        songs_ref.document(track_id).update({"upvotes": firestore.Increment(-1), "upvote_subs": firestore.ArrayRemove([session["google_id"]["sub"]])})
+                    return jsonify({"message": "downvote added"}), 200
+                
+                else: # if user has already downvoted, remove downvote
+                    songs_ref.document(track_id).update({"downvotes": firestore.Increment(-1), "downvote_subs": firestore.ArrayRemove([session["google_id"]["sub"]])})
+                    return jsonify({"message": "downvote removed"}), 200
+                
+            return jsonify({"message": "Song not found"}), 400
+        return jsonify({"message": "Missing track-id"}), 400
+    return jsonify({"message": "Missing playlist-id"}), 400
+
+@app.route("/delete", methods=["POST"])  # Delete a song
+def delete():
+    data = request.get_json()
+    if "playlist_id" in data:
+        playlist_id = data['playlist_id']
+        if "track_id" in data:
+            track_id = data['track_id']
+            playlist_ref = db.collection('playlists').document(playlist_id)
+            song_ref = playlist_ref.collection('songs').document(track_id)
+            song_doc = song_ref.get()
+            if song_doc.exists:
+                song_doc = song_doc.to_dict()
+                if song_doc.get("add_sub") == "" or song_doc.get("add_sub") == session["google_id"]["sub"]:
+                    token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
+                    if token_info:
+                        sp = spotipy.Spotify(auth=token_info['access_token'])
+                        sp.playlist_remove_all_occurrences_of_items(playlist_id, [track_id])
+
+                        song_ref.delete()
+                        playlist_ref.update({"length": firestore.Increment(-1)})
+                        return jsonify({"message": "Song deleted from Spotify and database"}), 200
+                    return jsonify({"message": "Unable to update Spotify token"}), 401
+                return jsonify({"message": "Only the user who added the song may delete it"}), 401
+            return jsonify({"message": "Could not find song in database"}), 500
+        return jsonify({"message": "Missing track-id field"}), 400
+    return jsonify({"message": "Missing playlist-id field"}), 400
 
 @app.route("/login")  # Login with Google
 def login():
@@ -268,7 +362,11 @@ def callback():
     if not session["google_id"]["state"] == request.args["state"]:
         print("Google OAuth state does not match! Redirecting...")
     else:
-        flow.fetch_token(authorization_response=request.url)
+        try:
+            flow.fetch_token(authorization_response=request.url)
+        except Exception as e:
+            print("Error fetching Google OAuth token:", e)
+            return redirect("/")
         credentials = flow.credentials
         request_session = requests.session()
         cached_session = cachecontrol.CacheControl(request_session)
@@ -286,8 +384,8 @@ def callback():
         }
 
         doc = db.collection("users").document(id_info["sub"]).get()
-        if not doc.exists: # Create user in database if not found
-            db.collection("users").document(id_info["sub"]).set({"name": id_info["name"], "profile_picture_url": id_info["picture"], "playlists": []})
+        if doc.exists: db.collection("users").document(id_info["sub"]).update({**id_info})
+        else: db.collection("users").document(id_info["sub"]).set({**id_info})
 
     return redirect("/spotify-login")
 
@@ -311,6 +409,7 @@ def spotify_callback():
 def logout():
     session.clear()
     return redirect("/")
+
 if __name__ == "__main__":
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.run(host="0.0.0.0", port=80, debug=True)

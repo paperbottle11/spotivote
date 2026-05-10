@@ -1,0 +1,407 @@
+{
+    "tracks": {
+        "href": "https://api.spotify.com/v1/search?offset=0&limit=5&query=efiefi&type=track",
+        "limit": 5,
+        "next": "https://api.spotify.com/v1/search?offset=5&limit=5&query=efiefi&type=track",
+        "offset": 0,
+        "previous": null,
+        "total": 30,
+        "items": [
+            {
+                "album": {
+                    "album_type": "single",
+                    "artists": [
+                        {
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/1UkPy51nszfhfXQELNyOHA"
+                            },
+                            "href": "https://api.spotify.com/v1/artists/1UkPy51nszfhfXQELNyOHA",
+                            "id": "1UkPy51nszfhfXQELNyOHA",
+                            "name": "Soni ROLO",
+                            "type": "artist",
+                            "uri": "spotify:artist:1UkPy51nszfhfXQELNyOHA"
+                        }
+                    ],
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/album/1qSSIJCsdXbZ3u7kULYsAY"
+                    },
+                    "href": "https://api.spotify.com/v1/albums/1qSSIJCsdXbZ3u7kULYsAY",
+                    "id": "1qSSIJCsdXbZ3u7kULYsAY",
+                    "images": [
+                        {
+                            "height": 640,
+                            "width": 640,
+                            "url": "https://i.scdn.co/image/ab67616d0000b27318c0636cd794f73a9af577cf"
+                        },
+                        {
+                            "height": 300,
+                            "width": 300,
+                            "url": "https://i.scdn.co/image/ab67616d00001e0218c0636cd794f73a9af577cf"
+                        },
+                        {
+                            "height": 64,
+                            "width": 64,
+                            "url": "https://i.scdn.co/image/ab67616d0000485118c0636cd794f73a9af577cf"
+                        }
+                    ],
+                    "is_playable": true,
+                    "name": "Efiafi",
+                    "release_date": "2025-09-05",
+                    "release_date_precision": "day",
+                    "total_tracks": 1,
+                    "type": "album",
+                    "uri": "spotify:album:1qSSIJCsdXbZ3u7kULYsAY"
+                },
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/1UkPy51nszfhfXQELNyOHA"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/1UkPy51nszfhfXQELNyOHA",
+                        "id": "1UkPy51nszfhfXQELNyOHA",
+                        "name": "Soni ROLO",
+                        "type": "artist",
+                        "uri": "spotify:artist:1UkPy51nszfhfXQELNyOHA"
+                    }
+                ],
+                "disc_number": 1,
+                "duration_ms": 234706,
+                "explicit": false,
+                "external_ids": {
+                    "isrc": "QZZ7R2514323"
+                },
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/6Bdgx6uABiqXbzjzDv8kRZ"
+                },
+                "href": "https://api.spotify.com/v1/tracks/6Bdgx6uABiqXbzjzDv8kRZ",
+                "id": "6Bdgx6uABiqXbzjzDv8kRZ",
+                "is_local": false,
+                "is_playable": true,
+                "name": "Efiafi",
+                "track_number": 1,
+                "type": "track",
+                "uri": "spotify:track:6Bdgx6uABiqXbzjzDv8kRZ"
+            },
+            {
+                "album": {
+                    "album_type": "album",
+                    "artists": [
+                        {
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/3WStuuZM52w0UBWDypqwr0"
+                            },
+                            "href": "https://api.spotify.com/v1/artists/3WStuuZM52w0UBWDypqwr0",
+                            "id": "3WStuuZM52w0UBWDypqwr0",
+                            "name": "Effi",
+                            "type": "artist",
+                            "uri": "spotify:artist:3WStuuZM52w0UBWDypqwr0"
+                        }
+                    ],
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/album/7apBj6qMv9mKIBrPTBq9Mx"
+                    },
+                    "href": "https://api.spotify.com/v1/albums/7apBj6qMv9mKIBrPTBq9Mx",
+                    "id": "7apBj6qMv9mKIBrPTBq9Mx",
+                    "images": [
+                        {
+                            "height": 640,
+                            "width": 640,
+                            "url": "https://i.scdn.co/image/ab67616d0000b2732ccb4e1c9db6c0cf58a52823"
+                        },
+                        {
+                            "height": 300,
+                            "width": 300,
+                            "url": "https://i.scdn.co/image/ab67616d00001e022ccb4e1c9db6c0cf58a52823"
+                        },
+                        {
+                            "height": 64,
+                            "width": 64,
+                            "url": "https://i.scdn.co/image/ab67616d000048512ccb4e1c9db6c0cf58a52823"
+                        }
+                    ],
+                    "is_playable": true,
+                    "name": "Closer",
+                    "release_date": "2013-03-08",
+                    "release_date_precision": "day",
+                    "total_tracks": 12,
+                    "type": "album",
+                    "uri": "spotify:album:7apBj6qMv9mKIBrPTBq9Mx"
+                },
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/3WStuuZM52w0UBWDypqwr0"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/3WStuuZM52w0UBWDypqwr0",
+                        "id": "3WStuuZM52w0UBWDypqwr0",
+                        "name": "Effi",
+                        "type": "artist",
+                        "uri": "spotify:artist:3WStuuZM52w0UBWDypqwr0"
+                    }
+                ],
+                "disc_number": 1,
+                "duration_ms": 170013,
+                "explicit": false,
+                "external_ids": {
+                    "isrc": "ATKB81300002"
+                },
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/4iKta4N0aWXJSlefwneHjO"
+                },
+                "href": "https://api.spotify.com/v1/tracks/4iKta4N0aWXJSlefwneHjO",
+                "id": "4iKta4N0aWXJSlefwneHjO",
+                "is_local": false,
+                "is_playable": true,
+                "name": "Muzik",
+                "track_number": 3,
+                "type": "track",
+                "uri": "spotify:track:4iKta4N0aWXJSlefwneHjO"
+            },
+            {
+                "album": {
+                    "album_type": "album",
+                    "artists": [
+                        {
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/3Wip5p5yKOMKdsQcCWu74X"
+                            },
+                            "href": "https://api.spotify.com/v1/artists/3Wip5p5yKOMKdsQcCWu74X",
+                            "id": "3Wip5p5yKOMKdsQcCWu74X",
+                            "name": "Hurl",
+                            "type": "artist",
+                            "uri": "spotify:artist:3Wip5p5yKOMKdsQcCWu74X"
+                        }
+                    ],
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/album/6Kt5gUiQqAkiHo486M3rzY"
+                    },
+                    "href": "https://api.spotify.com/v1/albums/6Kt5gUiQqAkiHo486M3rzY",
+                    "id": "6Kt5gUiQqAkiHo486M3rzY",
+                    "images": [
+                        {
+                            "height": 640,
+                            "width": 640,
+                            "url": "https://i.scdn.co/image/ab67616d0000b273a0ef4c6daa5f836b6d3d1966"
+                        },
+                        {
+                            "height": 300,
+                            "width": 300,
+                            "url": "https://i.scdn.co/image/ab67616d00001e02a0ef4c6daa5f836b6d3d1966"
+                        },
+                        {
+                            "height": 64,
+                            "width": 64,
+                            "url": "https://i.scdn.co/image/ab67616d00004851a0ef4c6daa5f836b6d3d1966"
+                        }
+                    ],
+                    "is_playable": true,
+                    "name": "A Place Called Today",
+                    "release_date": "1996",
+                    "release_date_precision": "year",
+                    "total_tracks": 10,
+                    "type": "album",
+                    "uri": "spotify:album:6Kt5gUiQqAkiHo486M3rzY"
+                },
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/3Wip5p5yKOMKdsQcCWu74X"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/3Wip5p5yKOMKdsQcCWu74X",
+                        "id": "3Wip5p5yKOMKdsQcCWu74X",
+                        "name": "Hurl",
+                        "type": "artist",
+                        "uri": "spotify:artist:3Wip5p5yKOMKdsQcCWu74X"
+                    }
+                ],
+                "disc_number": 1,
+                "duration_ms": 333520,
+                "explicit": false,
+                "external_ids": {
+                    "isrc": "US3Q89610499"
+                },
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/28pz5SU6zvw2CJYkcvI0rF"
+                },
+                "href": "https://api.spotify.com/v1/tracks/28pz5SU6zvw2CJYkcvI0rF",
+                "id": "28pz5SU6zvw2CJYkcvI0rF",
+                "is_local": false,
+                "is_playable": true,
+                "name": "Effie",
+                "track_number": 5,
+                "type": "track",
+                "uri": "spotify:track:28pz5SU6zvw2CJYkcvI0rF"
+            },
+            {
+                "album": {
+                    "album_type": "single",
+                    "artists": [
+                        {
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/0jI6gmEh2GfTydCgFFMTef"
+                            },
+                            "href": "https://api.spotify.com/v1/artists/0jI6gmEh2GfTydCgFFMTef",
+                            "id": "0jI6gmEh2GfTydCgFFMTef",
+                            "name": "MadTeen",
+                            "type": "artist",
+                            "uri": "spotify:artist:0jI6gmEh2GfTydCgFFMTef"
+                        },
+                        {
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/4oe1qp9xGSFxMYH4X9AXtl"
+                            },
+                            "href": "https://api.spotify.com/v1/artists/4oe1qp9xGSFxMYH4X9AXtl",
+                            "id": "4oe1qp9xGSFxMYH4X9AXtl",
+                            "name": "Efendi",
+                            "type": "artist",
+                            "uri": "spotify:artist:4oe1qp9xGSFxMYH4X9AXtl"
+                        }
+                    ],
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/album/0NgjCg6IgyTOmKKKK5oLMa"
+                    },
+                    "href": "https://api.spotify.com/v1/albums/0NgjCg6IgyTOmKKKK5oLMa",
+                    "id": "0NgjCg6IgyTOmKKKK5oLMa",
+                    "images": [
+                        {
+                            "height": 640,
+                            "width": 640,
+                            "url": "https://i.scdn.co/image/ab67616d0000b273a655ab2918a03d281d5af992"
+                        },
+                        {
+                            "height": 300,
+                            "width": 300,
+                            "url": "https://i.scdn.co/image/ab67616d00001e02a655ab2918a03d281d5af992"
+                        },
+                        {
+                            "height": 64,
+                            "width": 64,
+                            "url": "https://i.scdn.co/image/ab67616d00004851a655ab2918a03d281d5af992"
+                        }
+                    ],
+                    "is_playable": true,
+                    "name": "Efendi",
+                    "release_date": "2022-07-22",
+                    "release_date_precision": "day",
+                    "total_tracks": 1,
+                    "type": "album",
+                    "uri": "spotify:album:0NgjCg6IgyTOmKKKK5oLMa"
+                },
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/0jI6gmEh2GfTydCgFFMTef"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/0jI6gmEh2GfTydCgFFMTef",
+                        "id": "0jI6gmEh2GfTydCgFFMTef",
+                        "name": "MadTeen",
+                        "type": "artist",
+                        "uri": "spotify:artist:0jI6gmEh2GfTydCgFFMTef"
+                    },
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/4oe1qp9xGSFxMYH4X9AXtl"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/4oe1qp9xGSFxMYH4X9AXtl",
+                        "id": "4oe1qp9xGSFxMYH4X9AXtl",
+                        "name": "Efendi",
+                        "type": "artist",
+                        "uri": "spotify:artist:4oe1qp9xGSFxMYH4X9AXtl"
+                    }
+                ],
+                "disc_number": 1,
+                "duration_ms": 151999,
+                "explicit": false,
+                "external_ids": {
+                    "isrc": "FRX282275144"
+                },
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/6vaBdVkzXYtLVi1M6KcH5j"
+                },
+                "href": "https://api.spotify.com/v1/tracks/6vaBdVkzXYtLVi1M6KcH5j",
+                "id": "6vaBdVkzXYtLVi1M6KcH5j",
+                "is_local": false,
+                "is_playable": true,
+                "name": "Efendi",
+                "track_number": 1,
+                "type": "track",
+                "uri": "spotify:track:6vaBdVkzXYtLVi1M6KcH5j"
+            },
+            {
+                "album": {
+                    "album_type": "single",
+                    "artists": [
+                        {
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/5PIWabZPdU3YWRMbvD5nQJ"
+                            },
+                            "href": "https://api.spotify.com/v1/artists/5PIWabZPdU3YWRMbvD5nQJ",
+                            "id": "5PIWabZPdU3YWRMbvD5nQJ",
+                            "name": "Effie",
+                            "type": "artist",
+                            "uri": "spotify:artist:5PIWabZPdU3YWRMbvD5nQJ"
+                        }
+                    ],
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/album/4s96wjaiWLJZbYuk4PFulp"
+                    },
+                    "href": "https://api.spotify.com/v1/albums/4s96wjaiWLJZbYuk4PFulp",
+                    "id": "4s96wjaiWLJZbYuk4PFulp",
+                    "images": [
+                        {
+                            "height": 640,
+                            "width": 640,
+                            "url": "https://i.scdn.co/image/ab67616d0000b273d5b82c42ce078530d89cc16f"
+                        },
+                        {
+                            "height": 300,
+                            "width": 300,
+                            "url": "https://i.scdn.co/image/ab67616d00001e02d5b82c42ce078530d89cc16f"
+                        },
+                        {
+                            "height": 64,
+                            "width": 64,
+                            "url": "https://i.scdn.co/image/ab67616d00004851d5b82c42ce078530d89cc16f"
+                        }
+                    ],
+                    "is_playable": true,
+                    "name": "날이좋아서",
+                    "release_date": "2022-09-28",
+                    "release_date_precision": "day",
+                    "total_tracks": 2,
+                    "type": "album",
+                    "uri": "spotify:album:4s96wjaiWLJZbYuk4PFulp"
+                },
+                "artists": [
+                    {
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/5PIWabZPdU3YWRMbvD5nQJ"
+                        },
+                        "href": "https://api.spotify.com/v1/artists/5PIWabZPdU3YWRMbvD5nQJ",
+                        "id": "5PIWabZPdU3YWRMbvD5nQJ",
+                        "name": "Effie",
+                        "type": "artist",
+                        "uri": "spotify:artist:5PIWabZPdU3YWRMbvD5nQJ"
+                    }
+                ],
+                "disc_number": 1,
+                "duration_ms": 111000,
+                "explicit": false,
+                "external_ids": {
+                    "isrc": "KSA002201958"
+                },
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/track/1gctSNdrFZIphVZSUOHuGk"
+                },
+                "href": "https://api.spotify.com/v1/tracks/1gctSNdrFZIphVZSUOHuGk",
+                "id": "1gctSNdrFZIphVZSUOHuGk",
+                "is_local": false,
+                "is_playable": true,
+                "name": "U",
+                "track_number": 2,
+                "type": "track",
+                "uri": "spotify:track:1gctSNdrFZIphVZSUOHuGk"
+            }
+        ]
+    }
+}
