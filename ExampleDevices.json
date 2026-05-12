@@ -1,0 +1,24 @@
+{
+    "devices": [
+        {
+            "id": "6a625604c77a1b52499a1357f2e9cb6377e1dac3",
+            "is_active": false,
+            "is_private_session": false,
+            "is_restricted": false,
+            "name": "Web Player (Chrome)",
+            "supports_volume": true,
+            "type": "Computer",
+            "volume_percent": 100
+        },
+        {
+            "id": "b2fdea856658823dbdfbb1702b8c3c5ff9219f5b",
+            "is_active": false,
+            "is_private_session": false,
+            "is_restricted": false,
+            "name": "MSI",
+            "supports_volume": true,
+            "type": "Computer",
+            "volume_percent": 62
+        }
+    ]
+}

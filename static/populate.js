@@ -18,16 +18,18 @@ function createSongDiv(song_data) {
     song_div.appendChild(vote_container);
 
     // Upvote Button
-    let up_button = document.createElement('div');
+    let up_button = document.createElement('span');
     up_button.id = "upvote";
     up_button.className = "novote";
+    up_button.title = "Upvote song";
     up_button.addEventListener('click', () => upvote(playlist_id, song_id));
     vote_container.appendChild(up_button);
 
     // Downvote Button
-    let down_button = document.createElement('div');
+    let down_button = document.createElement('span');
     down_button.id = "downvote";
     down_button.className = "novote";
+    down_button.title = "Downvote song"
     down_button.addEventListener('click', () => downvote(playlist_id, song_id));
     vote_container.appendChild(down_button);
 
@@ -53,6 +55,7 @@ function createSongDiv(song_data) {
         explicit_icon.className = 'explicit-icon';
         explicit_icon.src = "static/explicit.png";
         explicit_icon.alt = "(explicit)";
+        explicit_icon.title = "Explicit";
         song_name_div.appendChild(explicit_icon);
     }
     song_info_div.appendChild(song_name_div);
@@ -106,6 +109,7 @@ function createSongDiv(song_data) {
         trash_can_icon.className = "delete-button";
         trash_can_icon.src = "static/trash.png";
         trash_can_icon.alt = "(delete)";
+        trash_can_icon.title = "Delete song";
         trash_can_icon.addEventListener('click', () => delete_song(playlist_id, song_id));
         song_div.appendChild(trash_can_icon);
     }
@@ -127,7 +131,7 @@ async function update(playlist_id) {
         }
         
         // Show loader while fetching songs
-        document.getElementById("loader").style.display = "block";
+        document.getElementById("songs-loader").style.display = "block";
         let song_list = document.getElementById('songs-container');
         song_list.style.display = "none";
         
@@ -162,7 +166,7 @@ async function update(playlist_id) {
     }
 
     // Show songs
-    document.getElementById("loader").style.display = "none";
+    document.getElementById("songs-loader").style.display = "none";
     document.getElementById("songs-container").style.display = "flex";
 }
 
@@ -243,5 +247,30 @@ async function delete_song(playlist_id, song_id) {
         }
     } catch (error) {
         console.error('An error occurred:', error);
+    }
+}
+
+async function play(playlist_id, device_id) {
+    try {
+        document.getElementById("play-loader").style.display = "block";
+        const response = await fetch("/play", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                playlist_id: playlist_id,
+                device_id
+            })
+        });
+
+        const data = await response.json();
+        console.log(data.message);
+        if (response.status == 404 && data.message.toLowerCase().includes("device")) {
+            alert("The selected device was not found or there are no active devices. Open Spotify on a device (if you haven't already) and refresh the page.")
+        }
+        
+    } catch (error) {
+        console.error('An error occurred:', error);
+    } finally {
+        document.getElementById("play-loader").style.display = "none";
     }
 }

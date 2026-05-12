@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Spotivote</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="static/styles.css">
+</head>
+
+<body>
+	{% if show_popup %}
+		<div id="popupOverlay" class="overlay-container show">
+			<div class="popup-box">
+				<h2 style="margin-bottom: 5px;">Hello there!</h2>
+				<hr>
+				<p style="margin-top: 10px;">
+					Please keep in mind that this app is unfinished, and there are some known bugs and glitches.
+					To make sure your experience is smooth (and my server doesn't crash):
+					<ul style="list-style-type: '- '; padding-left: 15px;">
+						<li>DO NOT spam click any buttons or links!</li>
+						<li>After importing a playlist, try not to add or delete songs outside of the app.</li>
+						<li>ONLY use the buttons within the app to delete songs from playlists you import!</li>
+					</ul><br>
+					Thank you and enjoy!
+				</p>
+				<button class="btn-close-popup" onclick="togglePopup()"><h4>I will!</h4></button>
+			</div>
+		</div>
+	{% endif %}
+
+    <div class="section" id="left-bar">
+		<div class="login">
+			<img id="pfp" src="{{ session['google_id']['picture'] }}" alt="{{ session['google_id']['name'] }}" />
+			<div class="profile">
+				<span id="name">{{ session['google_id']['name'] }}</span><br>
+				<a id="loginout" href="/logout">Logout</a>
+			</div>
+		</div>
+		<hr>
+        <div class="playlist-list">
+			{% if 'items' in user_playlists %}
+				{% for playlist in user_playlists['items'] %}
+                    <div class="playlist-item">
+						<a 
+							{% if current_playlist.get('id') != playlist['id'] %}
+								href="/app?playlist-id={{ playlist['id'] }}"
+							{% endif %} 
+							class="playlist-item-link {{ 'playlist-item-selected' if current_playlist.get('id') == playlist['id'] else '' }}"
+						>
+							<img class="playlist-image" src="{{ playlist['images'][0]['url'] if playlist['images'] else 'static/playlist.png'}}" alt="Playlist Image">
+							<p>{{ playlist['name'] }}</p>
+						</a>
+					</div>
+				{% endfor %}
+			{% endif %}
+		</div>
+	</div>
+    <div class="section" id="main">
+        <div id="current-playlist">
+			{% if current_playlist_exists %} <!-- Display selected playlist -->
+				<a id="current-playlist-image" href="{{ current_playlist['external_urls']['spotify'] }}" target="_blank" title="Open playlist in Spotify">
+					<img src="{{ current_playlist['images'][0]['url'] if current_playlist['images'] else 'static/playlist.png' }}" alt="Playlist Image">
+				</a>
+				<div id="current-playlist-name">
+					<a href="{{ current_playlist['external_urls']['spotify'] }}" target="_blank" title="Open playlist in Spotify">
+						<p>{{ current_playlist['name'] }}</p>
+					</a>
+					<div id="play-button-container">
+						<div id="play-button" onclick="play(`{{ current_playlist['id'] }}`, null);" title="Play on the current active device">
+							<div class="play-triangle"></div>
+							<p>Play</p>
+						</div>
+						<div id="dropdown-triangle-container"><div class="dropdown-triangle"></div></div>
+						<div id="play-dropdown">
+							{% for device in devices %}
+								<p onclick="play(`{{ current_playlist['id'] }}`, `{{ device['id'] }}` );" title="Play on {{ device['name'] }}">{{ device['name'] }}</p>
+							{% endfor %}
+						</div>
+						<div id="play-loader" class="loader"></div>
+					</div>
+				</div>
+			{% elif current_playlist_exists == None %} <!-- No playlist selected -->
+				<p class="current-playlist-message" id="current-playlist-name">Select a playlist</p>
+			{% else %} <!-- Display import button -->
+				<a class="current-playlist-message" id="create-playlist-link" href="/create-playlist?playlist-id={{ current_playlist['id'] }}&playlist-name={{ current_playlist['name'] }}">Import Playlist</a>
+			{% endif %}
+		</div>
+
+		{% if current_playlist_exists %}
+			<hr>
+			<div class="search-outer">
+				<img class="search-icon" src="static/search.png" alt="search">
+				<input type="text" name="search" value="" placeholder="Add a song" id="search" autocomplete="off">
+				<div id="songList">
+				</div>
+			</div>
+		{% endif %}
+
+		<div id="songs-loader" class="loader"></div>
+		<div id="songs-container"></div>
+    </div>
+	<script type="text/javascript" src="static/populate.js"></script>
+	<script type="text/javascript" src="static/search.js"></script>
+	<script>
+		function togglePopup() {
+			const overlay = document.getElementById('popupOverlay');
+			overlay.classList.toggle('show');
+		}
+	</script>
+	{% if current_playlist_exists %}
+		<script>
+			$(document).on("click", ".track_item", function() {
+				const trackId = $(this).attr("data-track-id");
+				$.ajax({
+					url: "/add",
+					type: "POST",
+					contentType: "application/json",
+					data: JSON.stringify({
+						playlist_id: "{{ current_playlist['id'] }}",
+						track_id: trackId
+					})
+				})
+				.done(function(data) {
+					console.log(data.message);
+					if ("song_data" in data) {
+						document.getElementById('songs-container').appendChild(createSongDiv(data.song_data));
+					}
+				})
+				.fail(function(jqXHR, textStatus, errorThrown) {
+					console.error("Error:", errorThrown);
+				});
+			});
+			update("{{ current_playlist['id'] }}");
+		</script>
+	{% endif %}
+</body>
+
+</html>
