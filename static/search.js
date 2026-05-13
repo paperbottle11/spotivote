@@ -2,7 +2,7 @@ let debounceTimer;
 let debounceTimerDelay = 250; // milliseconds
 let currentRequest = null;
 
-$("#search").on("input", function() {
+$("#song-search").on("input", function() {
     const search = $(this).val().trim();
 
     // If empty: cancel requests and clear UI
@@ -71,9 +71,9 @@ $("#search").on("input", function() {
 
 $(document).click(function(event) {
     // Check if the clicked element is not the search box
-    if (!$(event.target).closest('#search').length) {
+    if (!$(event.target).closest('#song-search').length) {
         // Clear the search box
-        $('#search').val('');
+        $('#song-search').val('');
         $("#songList").html("");
     }
 });

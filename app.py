@@ -82,16 +82,23 @@ def hybrid_shuffle_softplus(songs, scale=1):
         songs[i]["net"] = songs[i]["upvotes"] - songs[i]["downvotes"]
 
     # random.seed(random.random())
-    def weighted_key(song):
+    def weighted_key(song, temperature=0.5):
         scaled_net = song["net"] / scale
-        x = math.log1p(math.exp(scaled_net))  # log(1 + e^scaled_net) = Softplus
+        x = math.log1p(math.exp(scaled_net))  # softplus: log(1 / 1+e^votes)
         weight = max(x, 1e-6)
-        return math.log(random.random()) / weight  # Randomize weights
+        noise = math.log(random.random())
+        return noise / (weight * temperature)
 
     shuffled = sorted(songs, key=weighted_key, reverse=True)
     # for song in shuffled:
     #     print(song["net"], weighted_key(song))
     return shuffled
+
+def sort_by_votes(songs):
+    for i in range(len(songs)):
+        songs[i] = songs[i].to_dict()
+        songs[i]["net"] = songs[i]["upvotes"] - songs[i]["downvotes"]
+    return sorted(songs, key=lambda x: x["net"], reverse=True)
 
 load_dotenv()
 
@@ -129,7 +136,6 @@ def root():
         return redirect("/app")
     
     response = make_response(render_template("index.html"))
-    response.set_cookie("visited_today", "true", max_age=60*60*12) # show popup once per 12 hours
     return response
 
 
@@ -155,7 +161,7 @@ def main_app():
                 devices = sp.devices()["devices"]
 
     visited = request.cookies.get("visited_today")
-    response = make_response(render_template("app.html", session=session, user_playlists=user_playlists, current_playlist=current_playlist, current_playlist_exists=current_playlist_exists, devices=devices, show_popup=(visited == None)))
+    response = make_response(render_template("app.html", session=session, user_playlists=user_playlists, current_playlist=current_playlist, current_playlist_exists=current_playlist_exists, devices=devices, shuffle_state=session.get("shuffle_state"), show_popup=(visited == None)))
     if visited is None:
         response.set_cookie("visited_today", "true", max_age=60*60*12) # show popup once per 12 hours
     return response
@@ -169,10 +175,9 @@ def songs():
             playlist_id = request.args.get('playlist-id')
             sp = spotipy.Spotify(auth=token_info['access_token'])
             playlist = sp.playlist(playlist_id)
-
-            playlist_ref = db.collection('playlists').document(playlist_id)
-            songs_list = []                    
+            songs_list = []              
             for track in playlist['items']['items']:
+                if track["item"] == None: continue  # Skip broken songs
                 id = track["item"]["id"]
                 track_name = track["item"]["name"]
                 track_artist = track["item"]["artists"][0]["name"]
@@ -182,6 +187,7 @@ def songs():
                 uri = track["item"]["uri"]
                 songs_list.append({"uri": uri, "id": id, "name": track_name, "artist": track_artist, "album": track_album, "cover_url": cover_url, "added_at": track["added_at"], "explicit": explicit})
             
+            playlist_ref = db.collection('playlists').document(playlist_id)
             songs_ref = playlist_ref.collection('songs')
             for song in songs_list:
                 song_doc = songs_ref.document(song["id"]).get()
@@ -197,31 +203,35 @@ def songs():
                     song["add_profile_picture"] = data["add_profile_picture"]
                     song["add_user_name"] = data["add_user_name"]
                     song["added_at"] = data["added_at"].timestamp()
-                    song["user_added"] = data["add_sub"] == session["google_id"]["sub"] or data["add_sub"] == ""
+                    song["user_added"] = (data["add_sub"] == session["google_id"]["sub"]) or (data["add_sub"] == "")
                 else:
                     playlist_ref.update({"length": firestore.Increment(1)})
                     added_date = datetime.fromisoformat(song["added_at"].replace("Z", "+00:00"))
                     songs_ref.document(song["id"]).set({"song_uri": song["uri"], "song_name": song["name"], "song_artist": song["artist"], "upvotes": 0, "upvote_subs": [], "downvotes": 0, "downvote_subs": [], "added_at": added_date, "add_sub": "", "add_user_name": "", "add_profile_picture": ""})
-                    song["added_at"] = added_date.timestamp()
                     song["vote"] = 0
-
+                    song["added_at"] = added_date.timestamp()
+                    song["user_added"] = True
+                    
             return jsonify(songs_list), 200
         
         return jsonify({"message": "Unable to update Spotify token"}), 401
-    return jsonify("Error: Missing playlist-id query"), 400
+    return jsonify({"message": "Missing playlist-id query"}), 400
 
-@app.route("/create-playlist", methods=["GET"]) # Create playlist in database
+@app.route("/create-playlist", methods=["POST"]) # Create playlist in database
 @login_required
 def create_playlist():
-    if "playlist-id" in request.args:
-        playlist_id = request.args.get("playlist-id")
-        if "playlist-name" in request.args:
-            playlist_name = request.args.get("playlist-name")
+    data = request.get_json()
+    if "playlist_id" in data:
+        playlist_id = data.get("playlist_id")
+        if "playlist_name" in data:
+            playlist_name = data.get("playlist_name")
             playlist_ref = db.collection("playlists").document(playlist_id)
             if not playlist_ref.get().exists:
                 playlist_ref.set({"playlist_name": playlist_name, "date_created": firestore.SERVER_TIMESTAMP, "length": 0})
-    
-    return redirect("/app?playlist-id=" + playlist_id)
+                return jsonify({"message": "Playlist created"}), 200
+            return jsonify({"message": "Playlist already created"}), 200
+        return jsonify({"message": "Missing playlist_name field"}), 400
+    return jsonify({"message": "Missing playlist_id field"}), 400
 
 @app.route('/search', methods=["GET"]) # Song search
 def search():
@@ -398,7 +408,6 @@ def play():
     data = request.get_json()
     if "playlist_id" in data:
         playlist_id = data.get("playlist_id")
-        device_id = data.get("device_id")
         token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
         if token_info:
             sp = spotipy.Spotify(auth=token_info['access_token'])
@@ -406,12 +415,14 @@ def play():
             if playlist_ref.get().exists:
                 name = playlist_ref.get().to_dict()["playlist_name"]
                 songs_collection = list(playlist_ref.collection("songs").stream())
-                shuffled_songs = hybrid_shuffle_softplus(songs_collection)
-                devices = sp.devices()["devices"]
+                
+                session["shuffle_state"] = data.get("shuffle_state", session.get("shuffle_state"))
+                shuffled_songs = hybrid_shuffle_softplus(songs_collection) if session["shuffle_state"] else sort_by_votes(songs_collection)
                 try:
-                    sp.start_playback(uris=[song["song_uri"] for song in shuffled_songs], device_id=device_id)
+                    sp.start_playback(uris=[song["song_uri"] for song in shuffled_songs], device_id=data.get("device_id"))
                 except SpotifyException as e:
                     if e.reason == "NO_ACTIVE_DEVICE":
+                        devices = sp.devices()["devices"]
                         if len(devices) != 0:  # If there are any devices at all, use the first one
                             sp.start_playback(uris=[song["song_uri"] for song in shuffled_songs], device_id=devices[0]["id"])
                             return jsonify({"message": "No active device found, using first one"}), 200

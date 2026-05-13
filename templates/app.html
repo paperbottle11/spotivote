@@ -50,6 +50,9 @@
 							<img class="playlist-image" src="{{ playlist['images'][0]['url'] if playlist['images'] else 'static/playlist.png'}}" alt="Playlist Image">
 							<p>{{ playlist['name'] }}</p>
 						</a>
+						<a href="{{ playlist['external_urls']['spotify'] }}" target="_blank" rel="noopener" title="Open playlist in Spotify">
+							<img class="new-window-icon" src="static/new_window.png">
+						</a>
 					</div>
 				{% endfor %}
 			{% endif %}
@@ -58,31 +61,34 @@
     <div class="section" id="main">
         <div id="current-playlist">
 			{% if current_playlist_exists %} <!-- Display selected playlist -->
-				<a id="current-playlist-image" href="{{ current_playlist['external_urls']['spotify'] }}" target="_blank" title="Open playlist in Spotify">
-					<img src="{{ current_playlist['images'][0]['url'] if current_playlist['images'] else 'static/playlist.png' }}" alt="Playlist Image">
-				</a>
+				<img id="current-playlist-image" src="{{ current_playlist['images'][0]['url'] if current_playlist['images'] else 'static/playlist.png' }}" alt="Playlist Image">
 				<div id="current-playlist-name">
-					<a href="{{ current_playlist['external_urls']['spotify'] }}" target="_blank" title="Open playlist in Spotify">
-						<p>{{ current_playlist['name'] }}</p>
-					</a>
-					<div id="play-button-container">
-						<div id="play-button" onclick="play(`{{ current_playlist['id'] }}`, null);" title="Play on the current active device">
-							<div class="play-triangle"></div>
-							<p>Play</p>
+					<p>{{ current_playlist['name'] }}</p>
+					<div id="play-controls">
+						<div id="play-button-container">
+							<div id="play-button" onclick="play(`{{ current_playlist['id'] }}`, null);" title="Play on the current active device">
+								<div class="play-triangle"></div>
+								<p>Play</p>
+							</div>
+							<div id="dropdown-triangle-container"><div class="dropdown-triangle"></div></div>
+							<div id="play-dropdown">
+								{% for device in devices %}
+									<p onclick="play(`{{ current_playlist['id'] }}`, `{{ device['id'] }}`);" title="Play on {{ device['name'] }}">{{ device['name'] }}</p>
+								{% endfor %}
+							</div>
 						</div>
-						<div id="dropdown-triangle-container"><div class="dropdown-triangle"></div></div>
-						<div id="play-dropdown">
-							{% for device in devices %}
-								<p onclick="play(`{{ current_playlist['id'] }}`, `{{ device['id'] }}` );" title="Play on {{ device['name'] }}">{{ device['name'] }}</p>
-							{% endfor %}
-						</div>
+						<p id="shuffle-label" title="Disabled: playlist is sorted by net votes. Enabled: playlist is shuffled using net votes (worse songs played towards the end)">Smart Shuffle:</p>
+						<label class="switch" title="Disabled: playlist is sorted by net votes. Enabled: playlist is shuffled using net votes (worse songs played towards the end)">
+							<input id="shuffle-checkbox" type="checkbox" {{ 'checked' if shuffle_state else '' }}>
+							<span class="slider round"></span>
+						</label>
 						<div id="play-loader" class="loader"></div>
 					</div>
 				</div>
 			{% elif current_playlist_exists == None %} <!-- No playlist selected -->
 				<p class="current-playlist-message" id="current-playlist-name">Select a playlist</p>
 			{% else %} <!-- Display import button -->
-				<a class="current-playlist-message" id="create-playlist-link" href="/create-playlist?playlist-id={{ current_playlist['id'] }}&playlist-name={{ current_playlist['name'] }}">Import Playlist</a>
+				<a class="current-playlist-message" id="create-playlist-link" onclick="create_playlist(`{{ current_playlist['id'] }}`, `{{ current_playlist['name'] }}`);">Import Playlist</a>
 			{% endif %}
 		</div>
 
@@ -90,16 +96,18 @@
 			<hr>
 			<div class="search-outer">
 				<img class="search-icon" src="static/search.png" alt="search">
-				<input type="text" name="search" value="" placeholder="Add a song" id="search" autocomplete="off">
+				<input type="text" name="song-search" value="" placeholder="Add a song" id="song-search" autocomplete="off">
+				<input type="text" name="playlist-search" value="" placeholder="Search playlist" id="playlist-search" autocomplete="off">
 				<div id="songList">
 				</div>
 			</div>
+			<hr>
 		{% endif %}
 
 		<div id="songs-loader" class="loader"></div>
 		<div id="songs-container"></div>
     </div>
-	<script type="text/javascript" src="static/populate.js"></script>
+	<script type="text/javascript" src="static/script.js"></script>
 	<script type="text/javascript" src="static/search.js"></script>
 	<script>
 		function togglePopup() {
@@ -123,13 +131,14 @@
 				.done(function(data) {
 					console.log(data.message);
 					if ("song_data" in data) {
-						document.getElementById('songs-container').appendChild(createSongDiv(data.song_data));
+						document.getElementById('songs-container').appendChild(create_song_div(data.song_data));
 					}
 				})
 				.fail(function(jqXHR, textStatus, errorThrown) {
 					console.error("Error:", errorThrown);
 				});
 			});
+
 			update("{{ current_playlist['id'] }}");
 		</script>
 	{% endif %}

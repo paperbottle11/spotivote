@@ -1,4 +1,4 @@
-function createSongDiv(song_data) {
+function create_song_div(song_data) {
     let playlist_id = song_data['playlist_id'];
     let song_id = song_data['id'];
     
@@ -110,7 +110,9 @@ function createSongDiv(song_data) {
         trash_can_icon.src = "static/trash.png";
         trash_can_icon.alt = "(delete)";
         trash_can_icon.title = "Delete song";
-        trash_can_icon.addEventListener('click', () => delete_song(playlist_id, song_id));
+        trash_can_icon.addEventListener('click', (e) => {
+            show_delete_confirm(e.currentTarget, playlist_id, song_id);
+        });
         song_div.appendChild(trash_can_icon);
     }
     
@@ -156,7 +158,7 @@ async function update(playlist_id) {
                 let song_data = data[i];
                 song_data["number"] = i+1;
                 song_data["playlist_id"] = playlist_id;
-                song_list.appendChild(createSongDiv(song_data));
+                song_list.appendChild(create_song_div(song_data));
             }
         } else {
             console.error(`Error fetching data. Status: ${response.status}`);
@@ -168,6 +170,8 @@ async function update(playlist_id) {
     // Show songs
     document.getElementById("songs-loader").style.display = "none";
     document.getElementById("songs-container").style.display = "flex";
+
+    initializePlaylistSearch();
 }
 
 async function upvote(playlist_id, song_id) {
@@ -228,6 +232,55 @@ async function downvote(playlist_id, song_id) {
     }
 }
 
+function show_delete_confirm(icon, playlist_id, song_id) {
+    const song = icon.closest(".song");
+
+    // remove existing popup
+    document.querySelectorAll(".confirm-popup").forEach(el => el.remove());
+
+    let popup = document.createElement("div");
+    popup.className = "confirm-popup";
+    popup.innerHTML = `
+        <span>Delete?</span>
+        <button class="confirm">Yes</button>
+        <button class="cancel">No</button>
+    `;
+
+    song.appendChild(popup);
+
+    // position (your existing logic)
+    popup.style.position = "absolute";
+    popup.style.top = `${icon.offsetTop + icon.offsetHeight / 2}px`;
+    popup.style.left = `${icon.offsetLeft}px`;
+    popup.style.transform = "translate(-100%, -50%)";
+
+    // --- CLOSE ON OUTSIDE CLICK ---
+    const handleOutsideClick = (e) => {
+        if (!popup.contains(e.target) && e.target !== icon) {
+            popup.remove();
+            document.removeEventListener("click", handleOutsideClick);
+        }
+    };
+
+    // delay so the current click doesn’t instantly close it
+    setTimeout(() => {
+        document.addEventListener("click", handleOutsideClick);
+    }, 0);
+
+    // YES
+    popup.querySelector(".confirm").addEventListener("click", async () => {
+        popup.remove();
+        document.removeEventListener("click", handleOutsideClick);
+        await delete_song(playlist_id, song_id);
+    });
+
+    // NO
+    popup.querySelector(".cancel").addEventListener("click", () => {
+        popup.remove();
+        document.removeEventListener("click", handleOutsideClick);
+    });
+}
+
 async function delete_song(playlist_id, song_id) {
     try {
         const response = await fetch("/delete", {
@@ -258,7 +311,8 @@ async function play(playlist_id, device_id) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 playlist_id: playlist_id,
-                device_id
+                device_id: device_id,
+                shuffle_state: document.getElementById("shuffle-checkbox").checked
             })
         });
 
@@ -273,4 +327,50 @@ async function play(playlist_id, device_id) {
     } finally {
         document.getElementById("play-loader").style.display = "none";
     }
+}
+
+async function create_playlist(playlist_id, playlist_name) {
+    try {
+        const response = await fetch("/create-playlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                playlist_id: playlist_id,
+                playlist_name: playlist_name
+            })
+        });
+
+        const data = await response.json();
+        console.log(data.message);
+        if (response.ok) {
+            alert("This may take a while depending on the length of the playlist! Do not refresh or leave the page until the songs have loaded.")
+            window.location.reload()
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+    }
+}
+
+function debounce(fn, delay) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
+}
+
+function initializePlaylistSearch() {
+    const searchInput = document.getElementById("playlist-search");
+    const songs = document.querySelectorAll(".song");
+
+    searchInput.addEventListener("input", debounce(() => {
+        const query = searchInput.value.toLowerCase().trim();
+
+        songs.forEach(song => {
+            const title = song.querySelector(".song-name")?.textContent.toLowerCase() || "";
+            const artist = song.querySelector(".song-artist")?.textContent.toLowerCase() || "";
+
+            song.style.display = (title.includes(query) || artist.includes(query)) ? "grid" : "none";
+        });
+    }, debounceTimerDelay));
 }

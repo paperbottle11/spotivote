@@ -84,7 +84,7 @@ body {
     flex-direction: column;
 }
 #main {
-    flex: 4;
+    flex: 3;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -163,6 +163,11 @@ body {
 .playlist-item-link:hover {
     color: white;
 }
+.new-window-icon {
+    width: 15px;
+    height: 15px;
+    margin: 5px;
+}
 .playlist-item-selected {
     background-color: gray;
     color: black;
@@ -190,8 +195,6 @@ body {
     margin: 70px;
     margin-right: 50px;
     margin-bottom: 40px;
-}
-#current-playlist-image img {
     height: 200px;
     width: 200px;
     object-fit: cover; 
@@ -204,12 +207,8 @@ body {
     color: white;
     font-size: 60px;
     font-weight: 650;
-    gap: 20px;
     margin-bottom: 55px;
-}
-#current-playlist-name a {
-    text-decoration: none;
-    color: white;
+    margin-right: 15px;
 }
 .current-playlist-message {
     padding: 5%;
@@ -230,11 +229,17 @@ body {
 #create-playlist-link:hover {
     background-color: lightgray;
 }
-#play-button-container {
+#play-controls {
     display: flex;
     position: relative;
     align-items: center;
     margin-right: auto;
+    margin-top: 20px;
+}
+#play-button-container {
+    display: flex;
+    position: relative;
+    align-items: center;
 }
 #play-button-container:hover #play-dropdown {
     display: block;
@@ -302,6 +307,59 @@ body {
     border-right: 5px solid transparent;
     border-top: 6px solid white; /* arrow color */
 }
+#shuffle-label {
+    font-size: 15px;
+    margin-left: 10px;
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 25px;
+    margin-left: 5px;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+input:checked + .slider {
+    background-color: green;
+}
+input:focus + .slider {
+    box-shadow: 0 0 1px green;
+}
+input:checked + .slider:before {
+    transform: translateX(16px);
+}
+.slider.round {
+    border-radius: 34px;
+}
+.slider.round:before {
+    border-radius: 50%;
+}
 #play-loader {
     width: 15px;
     height: 15px;
@@ -309,7 +367,7 @@ body {
     border-width: 4px;
     position: absolute;
     right: -30px;
-    top: -5px;
+    top: -21px;
 }
 .search-outer {
     display: flex;
@@ -320,12 +378,22 @@ body {
     height: 40px;
     margin: 10px;
 }
-#search {
+#song-search {
     color: lightgray;
     font-size: 25px;
     border: none;
     outline: none;
     background-color: #1f1f1f;
+}
+#playlist-search {
+    color: lightgray;
+    font-size: 25px;
+    border: none;
+    outline: none;
+    background-color: #1f1f1f;
+    margin-left: auto;
+    margin-right: 10px;
+    text-align: right;
 }
 .explicit-icon {
     height: 14px;
@@ -421,8 +489,7 @@ body {
     grid-template-columns: 30px  20px  60px  minmax(100px, 1fr)  minmax(100px, 1fr)  minmax(100px, 0.5fr)  minmax(100px, 0.5fr)   20px;
     color: rgb(132, 132, 132);
     font-size: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid gray;
+    margin-bottom: -10px;
     gap: 10px;
 }
 #header-number {
@@ -445,6 +512,7 @@ body {
     grid-area: user;
 }
 .song {
+    position: relative;
     display: grid;
     grid-template-areas:  "num   vote  img   info                album               date                  user                  delete";
     grid-template-columns: 30px  20px  60px  minmax(100px, 1fr)  minmax(100px, 1fr)  minmax(100px, 0.5fr)  minmax(100px, 0.5fr)  20px;
@@ -533,4 +601,35 @@ body {
     width: 20px;
     opacity: 0.9;
     cursor: pointer;
+}
+.confirm-popup {
+    position: absolute;
+    background: #1f1f1f;
+    color: white;
+    padding: 8px 10px;
+    border-radius: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    z-index: 1000;
+}
+.confirm-popup button {
+    background-color: #d00;
+    border: none;
+    color: white;
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.confirm-popup button:hover {
+    background-color: darkred;
+}
+.confirm-popup button.cancel {
+    background: #555;
+}
+.confirm-popup button.cancel:hover {
+    background: #444;
 }
