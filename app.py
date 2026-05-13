@@ -315,7 +315,8 @@ def add():
                                 "explicit": explicit,
                                 "user_added": True,
                                 "add_user_name": session["google_id"]["name"],
-                                "add_profile_picture": session["google_id"]["picture"]
+                                "add_profile_picture": session["google_id"]["picture"],
+                                "net_votes": 0
                             }
                         }), 200
 
