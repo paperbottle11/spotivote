@@ -23,6 +23,8 @@ from spotipy.oauth2 import SpotifyOAuth
 from spotipy import *
 
 class FirestoreCacheHandler(spotipy.cache_handler.CacheHandler):
+    """A custom cache handler that stores Spotify token info in a firestore database using the current user logged into the flask session."""
+
     def __init__(self, db, session):
         self.db = db
         self.session = session
@@ -45,56 +47,50 @@ class FirestoreCacheHandler(spotipy.cache_handler.CacheHandler):
         except Exception as e:
             print(f"Error saving token to Firestore: {e}")
 
-class SpotifySearchResults():
-    def __init__(self,name):
-        search_str = name
-        sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
-        self.result = sp.search(search_str,5)
-        self.veri=dict()
-        for i in range(5):
-            my_dict={}
-            my_dict["id"]=self.result['tracks']['items'][i]['id']
-            my_dict["cover_img"]=self.result['tracks']['items'][i]['album']['images'][0]['url']
-            my_dict["name"]=self.result['tracks']['items'][i]['name']
-            my_dict["artist"]=self.result['tracks']['items'][i]['album']['artists'][0]['name']
-            self.veri[my_dict["id"]] = my_dict
-
 def login_required(function):
-    # A decorator function that checks if the user is logged in before allowing access to certain routes
+    """A decorator function that checks if the user is logged in before allowing access to certain routes"""
+
     @wraps(function)
     def wrapper(*args, **kwargs):
         if "sub" not in session.get("google_id", {}):
             return redirect("/")
         else:
             return function()
-        
+
     return wrapper
 
 def get_playlist(playlists, playlist_id):
+    """Helper function to find the requested playlist item from a list of the user's playlists returned from Spotify's API"""
+
     for playlist in playlists['items']:
         if playlist['id'] == playlist_id:
             return playlist
     return None
 
-def hybrid_shuffle_softplus(songs, scale=1):
+def hybrid_shuffle_softplus(songs, scale=1, temperature=0.5):
+    """
+    Uses softplus and log transformations to shuffle a list of songs using their net votes
+
+    :param scale: factor to scale votes by (default=1)
+    :param temperature: scales how much randomness affects the final list (lower=less shuffled)
+    """
+
     for i in range(len(songs)):
         songs[i] = songs[i].to_dict()
         songs[i]["net"] = songs[i]["upvotes"] - songs[i]["downvotes"]
 
-    # random.seed(random.random())
-    def weighted_key(song, temperature=0.5):
+    def weighted_key(song):
         scaled_net = song["net"] / scale
-        x = math.log1p(math.exp(scaled_net))  # softplus: log(1 / 1+e^votes)
+        x = math.log1p(math.exp(scaled_net))  # softplus: log(1 / 1+e^scaled_net)
         weight = max(x, 1e-6)
         noise = math.log(random.random())
         return noise / (weight * temperature)
 
-    shuffled = sorted(songs, key=weighted_key, reverse=True)
-    # for song in shuffled:
-    #     print(song["net"], weighted_key(song))
-    return shuffled
+    return sorted(songs, key=weighted_key, reverse=True)
 
 def sort_by_votes(songs):
+    """Sorts songs purely by their net votes"""
+    
     for i in range(len(songs)):
         songs[i] = songs[i].to_dict()
         songs[i]["net"] = songs[i]["upvotes"] - songs[i]["downvotes"]
@@ -120,7 +116,7 @@ flow = Flow.from_client_secrets_file(
 cred = credentials.Certificate("cred.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
-    
+
 # Spotify OAuth setup
 sp_cache_handler = FirestoreCacheHandler(db, session)
 sp_oauth = SpotifyOAuth(client_id=os.getenv("SPOTIPY_CLIENT_ID"),
@@ -130,6 +126,7 @@ sp_oauth = SpotifyOAuth(client_id=os.getenv("SPOTIPY_CLIENT_ID"),
                         cache_handler=sp_cache_handler,
                         show_dialog=True)
 
+# Root Endpoint
 @app.route("/", methods=["GET"]) # Login Page
 def root():
     if "sub" in session.get("google_id", {}): # Redirect to app if logged in
@@ -138,7 +135,7 @@ def root():
     response = make_response(render_template("index.html"))
     return response
 
-
+# App Endpoints
 @app.route("/app", methods=["GET"]) # Main app page
 @login_required
 def main_app():
@@ -175,7 +172,8 @@ def songs():
             playlist_id = request.args.get('playlist-id')
             sp = spotipy.Spotify(auth=token_info['access_token'])
             playlist = sp.playlist(playlist_id)
-            songs_list = []              
+            songs_list = []  
+            song_ids = set()            
             for track in playlist['items']['items']:
                 if track["item"] == None: continue  # Skip broken songs
                 id = track["item"]["id"]
@@ -186,7 +184,8 @@ def songs():
                 explicit = track["item"]["explicit"]
                 uri = track["item"]["uri"]
                 songs_list.append({"uri": uri, "id": id, "name": track_name, "artist": track_artist, "album": track_album, "cover_url": cover_url, "added_at": track["added_at"], "explicit": explicit})
-            
+                song_ids.add(id)
+
             playlist_ref = db.collection('playlists').document(playlist_id)
             songs_ref = playlist_ref.collection('songs')
             for song in songs_list:
@@ -205,12 +204,19 @@ def songs():
                     song["added_at"] = data["added_at"].timestamp()
                     song["user_added"] = (data["add_sub"] == session["google_id"]["sub"]) or (data["add_sub"] == "")
                 else:
-                    playlist_ref.update({"length": firestore.Increment(1)})
+                    playlist_ref.update({"length": firestore.Increment(1), "song_ids": firestore.ArrayUnion([song["id"]])})
                     added_date = datetime.fromisoformat(song["added_at"].replace("Z", "+00:00"))
                     songs_ref.document(song["id"]).set({"song_uri": song["uri"], "song_name": song["name"], "song_artist": song["artist"], "upvotes": 0, "upvote_subs": [], "downvotes": 0, "downvote_subs": [], "added_at": added_date, "add_sub": "", "add_user_name": "", "add_profile_picture": ""})
                     song["vote"] = 0
                     song["added_at"] = added_date.timestamp()
                     song["user_added"] = True
+
+            db_song_ids = set(playlist_ref.get().to_dict()["song_ids"])
+            diff = db_song_ids - song_ids
+            if diff:  # Delete songs not in spotify playlist
+                for id in diff:
+                    songs_ref.document(id).delete()
+                    playlist_ref.update({"length": firestore.Increment(-1), "song_ids": firestore.ArrayRemove([id])})
                     
             return jsonify(songs_list), 200
         
@@ -227,7 +233,7 @@ def create_playlist():
             playlist_name = data.get("playlist_name")
             playlist_ref = db.collection("playlists").document(playlist_id)
             if not playlist_ref.get().exists:
-                playlist_ref.set({"playlist_name": playlist_name, "date_created": firestore.SERVER_TIMESTAMP, "length": 0})
+                playlist_ref.set({"playlist_name": playlist_name, "date_created": firestore.SERVER_TIMESTAMP, "length": 0, "song_ids": []})
                 return jsonify({"message": "Playlist created"}), 200
             return jsonify({"message": "Playlist already created"}), 200
         return jsonify({"message": "Missing playlist_name field"}), 400
@@ -238,15 +244,15 @@ def search():
     if "q" in request.args:
         try:
             sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
-            result = sp.search(request.args.get('q'), 5)
+            results = sp.search(request.args.get('q'), 10)['tracks']['items']
             song_data = {}
-            for i in range(5):
+            for i in range(len(results)):
                 song = {}
-                song["id"] = result['tracks']['items'][i]['id']
-                song["cover_img"] = result['tracks']['items'][i]['album']['images'][0]['url']
-                song["name"] = result['tracks']['items'][i]['name']
-                song["artist"] = result['tracks']['items'][i]['album']['artists'][0]['name']
-                song["explicit"] = result['tracks']['items'][i]['explicit']
+                song["id"] = results[i]['id']
+                song["cover_img"] = results[i]['album']['images'][0]['url']
+                song["name"] = results[i]['name']
+                song["artist"] = results[i]['album']['artists'][0]['name']
+                song["explicit"] = results[i]['explicit']
                 song_data[song["id"]] = song
             return json.dumps(song_data), 200
         except Exception as e:
@@ -289,7 +295,7 @@ def add():
                         "add_profile_picture": session["google_id"]["picture"]
                     })
 
-                    playlist_ref.update({"length": firestore.Increment(1)})
+                    playlist_ref.update({"length": firestore.Increment(1), "song_ids": firestore.ArrayUnion([track_id])})
                     playlist_length = playlist_ref.get().to_dict().get("length")
                     sp.playlist_add_items(playlist_id, [track_id])
 
@@ -387,21 +393,13 @@ def delete():
                         sp.playlist_remove_all_occurrences_of_items(playlist_id, [track_id])
 
                         song_ref.delete()
-                        playlist_ref.update({"length": firestore.Increment(-1)})
+                        playlist_ref.update({"length": firestore.Increment(-1), "song_ids": firestore.ArrayRemove([track_id])})
                         return jsonify({"message": "Song deleted from Spotify and database"}), 200
                     return jsonify({"message": "Unable to update Spotify token"}), 401
                 return jsonify({"message": "Only the user who added the song may delete it"}), 401
             return jsonify({"message": "Could not find song in database"}), 500
         return jsonify({"message": "Missing track-id field"}), 400
     return jsonify({"message": "Missing playlist-id field"}), 400
-
-@app.route("/get-devices", methods=["GET"])
-def get_devices():
-    token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
-    if token_info:
-        sp = spotipy.Spotify(auth=token_info['access_token'])
-        return jsonify({"devices": sp.devices()["devices"]}), 200
-    return jsonify({"message": "Unable to update Spotify token"}), 401
 
 @app.route("/play", methods=["POST"])
 def play():
@@ -437,6 +435,7 @@ def play():
     return jsonify({"message": "Missing playlist-id field"}), 400
 
 
+# OAuth Endpoints
 @app.route("/login")  # Login with Google
 def login():
     authorization_url, state = flow.authorization_url()
