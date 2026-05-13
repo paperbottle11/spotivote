@@ -50,7 +50,7 @@
 							<p>{{ playlist['name'] }}</p>
 						</a>
 						<a href="{{ playlist['external_urls']['spotify'] }}" target="_blank" rel="noopener" title="Open playlist in Spotify">
-							<img class="new-window-icon" src="static/new_window.png">
+							<img class="new-window-icon" src={{ 'static/new_window.png' if playlist['exists'] else 'static/new_window_red.png'}}>
 						</a>
 					</div>
 				{% endfor %}

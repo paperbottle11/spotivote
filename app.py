@@ -143,19 +143,21 @@ def main_app():
     current_playlist = {}
     current_playlist_exists = None
     devices = None
-    
-    if "sub" in session.get("google_id", {}): # If user logged in
-        token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
-        if token_info:
-            sp = spotipy.Spotify(auth=token_info['access_token'])
-            user_playlists = sp.current_user_playlists()
 
-            if "playlist-id" in request.args:  # If playlist-id query provided, get playlist info to display
-                playlist_id = request.args.get('playlist-id')
-                playlist_ref = db.collection('playlists').document(playlist_id)
-                current_playlist_exists = playlist_ref.get().exists
-                current_playlist = get_playlist(user_playlists, playlist_id)
-                devices = sp.devices()["devices"]
+    token_info = sp_oauth.validate_token(sp_cache_handler.get_cached_token())
+    if token_info:
+        sp = spotipy.Spotify(auth=token_info['access_token'])
+        user_playlists = sp.current_user_playlists()
+        current_playlist_id = request.args.get('playlist-id')
+
+        for playlist in user_playlists["items"]:
+            playlist_ref = db.collection('playlists').document(playlist["id"])
+            playlist["exists"] = playlist_ref.get().exists
+            if current_playlist_id == playlist["id"]:
+                current_playlist_exists = playlist["exists"]
+                current_playlist = playlist
+
+        devices = sp.devices()["devices"]
 
     visited = request.cookies.get("visited_today")
     response = make_response(render_template("app.html", session=session, user_playlists=user_playlists, current_playlist=current_playlist, current_playlist_exists=current_playlist_exists, devices=devices, shuffle_state=session.get("shuffle_state"), show_popup=(visited == None)))
@@ -203,6 +205,7 @@ def songs():
                     song["add_user_name"] = data["add_user_name"]
                     song["added_at"] = data["added_at"].timestamp()
                     song["user_added"] = (data["add_sub"] == session["google_id"]["sub"]) or (data["add_sub"] == "")
+                    song["net_votes"] = data["upvotes"] - data["downvotes"]
                 else:
                     playlist_ref.update({"length": firestore.Increment(1), "song_ids": firestore.ArrayUnion([song["id"]])})
                     added_date = datetime.fromisoformat(song["added_at"].replace("Z", "+00:00"))
@@ -210,6 +213,7 @@ def songs():
                     song["vote"] = 0
                     song["added_at"] = added_date.timestamp()
                     song["user_added"] = True
+                    song["net_votes"] = 0
 
             db_song_ids = set(playlist_ref.get().to_dict()["song_ids"])
             diff = db_song_ids - song_ids

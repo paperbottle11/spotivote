@@ -12,10 +12,30 @@ function create_song_div(song_data) {
     num_div.textContent = song_data["number"];
     song_div.appendChild(num_div);
 
-    // Vote Button Container
+    // Vote Container
     let vote_container = document.createElement('div');
     vote_container.className = "vote-container";
     song_div.appendChild(vote_container);
+
+    // Net Votes
+    let net_votes = document.createElement('div');
+    net_votes.className = "net-votes";
+    if (song_data["net_votes"] > 0) {
+        net_votes.style.color = "#0b0";
+        net_votes.textContent = "+" + song_data["net_votes"];
+    } else if (song_data["net_votes"] < 0) {
+        net_votes.style.color = "#c00";
+        net_votes.textContent = song_data["net_votes"];
+    } else {
+        net_votes.style.color = "gray";
+        net_votes.textContent = song_data["net_votes"];
+    }
+    vote_container.appendChild(net_votes);
+
+    // Vote Button Container
+    let vote_button_container = document.createElement('div');
+    vote_button_container.className = "vote-button-container";
+    vote_container.appendChild(vote_button_container);
 
     // Upvote Button
     let up_button = document.createElement('span');
@@ -23,7 +43,7 @@ function create_song_div(song_data) {
     up_button.className = "novote";
     up_button.title = "Upvote song";
     up_button.addEventListener('click', () => upvote(playlist_id, song_id));
-    vote_container.appendChild(up_button);
+    vote_button_container.appendChild(up_button);
 
     // Downvote Button
     let down_button = document.createElement('span');
@@ -31,7 +51,7 @@ function create_song_div(song_data) {
     down_button.className = "novote";
     down_button.title = "Downvote song"
     down_button.addEventListener('click', () => downvote(playlist_id, song_id));
-    vote_container.appendChild(down_button);
+    vote_button_container.appendChild(down_button);
 
     // Song Cover Image
     let song_img = document.createElement('img');
@@ -190,11 +210,26 @@ async function upvote(playlist_id, song_id) {
             let song_div = document.getElementById(song_id);
             let up_button = song_div.querySelector('#upvote');
             let down_button = song_div.querySelector('#downvote');
+            let net_votes = song_div.querySelector('.net-votes');
+            votes = parseInt(net_votes.textContent, 10);
+
             if (up_button.className === "upvote") {
                 up_button.className = "novote";
+                votes -= 1;
             } else {
+                votes += down_button.className == "novote" ? 1 : 2;
                 up_button.className = "upvote";
                 down_button.className = "novote";
+            }
+            if (votes > 0) {
+                net_votes.style.color = "#0b0";
+                net_votes.textContent = "+" + votes;
+            } else if (votes < 0) {
+                net_votes.style.color = "#c00";
+                net_votes.textContent = votes;
+            } else {
+                net_votes.style.color = "gray";
+                net_votes.textContent = votes;
             }
         }
     } catch (error) {
@@ -219,12 +254,26 @@ async function downvote(playlist_id, song_id) {
             let song_div = document.getElementById(song_id);
             let up_button = song_div.querySelector('#upvote');
             let down_button = song_div.querySelector('#downvote');
+            let net_votes = song_div.querySelector('.net-votes');
+            votes = parseInt(net_votes.textContent, 10);
 
             if (down_button.className === "downvote") {
                 down_button.className = "novote";
+                votes += 1;
             } else {
+                votes -= up_button.className == "novote" ? 1 : 2;
                 down_button.className = "downvote";
                 up_button.className = "novote";
+            }
+            if (votes > 0) {
+                net_votes.style.color = "#0b0";
+                net_votes.textContent = "+" + votes;
+            } else if (votes < 0) {
+                net_votes.style.color = "#c00";
+                net_votes.textContent = votes;
+            } else {
+                net_votes.style.color = "gray";
+                net_votes.textContent = votes;
             }
         }
     } catch (error) {

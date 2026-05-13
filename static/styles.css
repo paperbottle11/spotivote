@@ -518,7 +518,7 @@ input:checked + .slider:before {
     position: relative;
     display: grid;
     grid-template-areas:  "num   vote  img   info                album               date                  user                  delete";
-    grid-template-columns: 30px  20px  60px  minmax(100px, 1fr)  minmax(100px, 1fr)  minmax(100px, 0.5fr)  minmax(100px, 0.5fr)  20px;
+    grid-template-columns: 30px  45px  60px  minmax(100px, 1fr)  minmax(100px, 1fr)  minmax(100px, 0.5fr)  minmax(100px, 0.5fr)  20px;
     background-color: #1f1f1f;
     color: white;
     align-items: center;
@@ -536,8 +536,15 @@ input:checked + .slider:before {
 .vote-container {
     grid-area: vote;
     display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: end;
+}
+.vote-button-container {
+    display: flex;
     flex-direction: column;
     gap: 5px;
+    margin-left: 5px;
 }
 #upvote {
 	width: 0;
