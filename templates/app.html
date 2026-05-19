@@ -63,7 +63,13 @@
 			{% if current_playlist_exists %} <!-- Display selected playlist -->
 				<img id="current-playlist-image" src="{{ current_playlist['images'][0]['url'] if current_playlist['images'] else 'static/playlist.png' }}" alt="Playlist Image">
 				<div id="current-playlist-name">
-					<p>{{ current_playlist['name'] }}</p>
+					<p>
+						{{ current_playlist['name'] }}
+						{% if current_playlist['creator']['sub'] == session['google_id']['sub'] %}
+							<img src="static/trash.png" class="delete-button" onclick="show_playlist_delete_confirm(`{{ current_playlist['id'] }}`);" title="Delete playlist from app">
+						{% endif %}
+					</p>
+					
 					<div id="play-controls">
 						<div id="play-button-container">
 							<div id="play-button" onclick="play(`{{ current_playlist['id'] }}`, null);" title="Play on the current active device">

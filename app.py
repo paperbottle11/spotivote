@@ -156,6 +156,7 @@ def main_app():
             if current_playlist_id == playlist["id"]:
                 current_playlist_exists = playlist["exists"]
                 current_playlist = playlist
+                current_playlist["creator"] = playlist_ref.get().to_dict()["creator"] if current_playlist_exists else None
 
         devices = sp.devices()["devices"]
 
@@ -237,10 +238,23 @@ def create_playlist():
             playlist_name = data.get("playlist_name")
             playlist_ref = db.collection("playlists").document(playlist_id)
             if not playlist_ref.get().exists:
-                playlist_ref.set({"playlist_name": playlist_name, "date_created": firestore.SERVER_TIMESTAMP, "length": 0, "song_ids": []})
+                playlist_ref.set({"playlist_name": playlist_name, "date_created": firestore.SERVER_TIMESTAMP, "length": 0, "song_ids": [], "creator": {"name": session["google_id"]["name"], "sub": session["google_id"]["sub"]}})
                 return jsonify({"message": "Playlist created"}), 200
             return jsonify({"message": "Playlist already created"}), 200
         return jsonify({"message": "Missing playlist_name field"}), 400
+    return jsonify({"message": "Missing playlist_id field"}), 400
+
+@app.route("/delete-playlist", methods=["POST"]) # Delete playlist in database
+@login_required
+def delete_playlist():
+    data = request.get_json()
+    if "playlist_id" in data:
+        playlist_id = data.get("playlist_id")
+        playlist_ref = db.collection("playlists").document(playlist_id)
+        if playlist_ref.get().exists:
+            playlist_ref.delete()
+            return jsonify({"message": "Playlist deleted"}), 200
+        return jsonify({"message": "Playlist does not exist"}), 404
     return jsonify({"message": "Missing playlist_id field"}), 400
 
 @app.route('/search', methods=["GET"]) # Song search
@@ -474,8 +488,8 @@ def callback():
         }
 
         doc = db.collection("users").document(id_info["sub"]).get()
-        if doc.exists: db.collection("users").document(id_info["sub"]).update({**id_info})
-        else: db.collection("users").document(id_info["sub"]).set({**id_info})
+        if doc.exists: db.collection("users").document(id_info["sub"]).update({"google_id": id_info})
+        else: db.collection("users").document(id_info["sub"]).set({"google_id": id_info})
 
     return redirect("/spotify-login")
 

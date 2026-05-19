@@ -131,7 +131,7 @@ function create_song_div(song_data) {
         trash_can_icon.alt = "(delete)";
         trash_can_icon.title = "Delete song";
         trash_can_icon.addEventListener('click', (e) => {
-            show_delete_confirm(e.currentTarget, playlist_id, song_id);
+            show_song_delete_confirm(e.currentTarget, playlist_id, song_id);
         });
         song_div.appendChild(trash_can_icon);
     }
@@ -281,7 +281,56 @@ async function downvote(playlist_id, song_id) {
     }
 }
 
-function show_delete_confirm(icon, playlist_id, song_id) {
+function show_playlist_delete_confirm(playlist_id) {
+    const playlist = document.getElementById("current-playlist");
+    const icon = document.querySelector("#current-playlist-name p .delete-button");
+
+    // remove existing popup
+    document.querySelectorAll(".confirm-popup").forEach(el => el.remove());
+
+    let popup = document.createElement("div");
+    popup.className = "confirm-popup";
+    popup.innerHTML = `
+        <span style="width: 95px;">Delete from app?</span>
+        <button class="confirm">Yes</button>
+        <button class="cancel">No</button>
+    `;
+
+    playlist.appendChild(popup);
+
+    popup.style.position = "absolute";
+    popup.style.top = `${icon.offsetTop + icon.offsetHeight / 2}px`;
+    popup.style.left = `${icon.offsetLeft - 5}px`;
+    popup.style.transform = "translate(-100%, -50%)";
+
+    // --- CLOSE ON OUTSIDE CLICK ---
+    const handleOutsideClick = (e) => {
+        if (!popup.contains(e.target) && e.target !== icon) {
+            popup.remove();
+            document.removeEventListener("click", handleOutsideClick);
+        }
+    };
+
+    // delay so the current click doesn’t instantly close it
+    setTimeout(() => {
+        document.addEventListener("click", handleOutsideClick);
+    }, 0);
+
+    // YES
+    popup.querySelector(".confirm").addEventListener("click", async () => {
+        popup.remove();
+        document.removeEventListener("click", handleOutsideClick);
+        await delete_playlist(playlist_id);
+    });
+
+    // NO
+    popup.querySelector(".cancel").addEventListener("click", () => {
+        popup.remove();
+        document.removeEventListener("click", handleOutsideClick);
+    });
+}
+
+function show_song_delete_confirm(icon, playlist_id, song_id) {
     const song = icon.closest(".song");
 
     // remove existing popup
@@ -297,10 +346,9 @@ function show_delete_confirm(icon, playlist_id, song_id) {
 
     song.appendChild(popup);
 
-    // position (your existing logic)
     popup.style.position = "absolute";
     popup.style.top = `${icon.offsetTop + icon.offsetHeight / 2}px`;
-    popup.style.left = `${icon.offsetLeft}px`;
+    popup.style.left = `${icon.offsetLeft - 5}px`;
     popup.style.transform = "translate(-100%, -50%)";
 
     // --- CLOSE ON OUTSIDE CLICK ---
@@ -393,6 +441,26 @@ async function create_playlist(playlist_id, playlist_name) {
         console.log(data.message);
         if (response.ok) {
             alert("This may take a while depending on the length of the playlist! Do not refresh or leave the page until the songs have loaded.")
+            window.location.reload()
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+    }
+}
+
+async function delete_playlist(playlist_id) {
+    try {
+        const response = await fetch("/delete-playlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                playlist_id: playlist_id
+            })
+        });
+
+        const data = await response.json();
+        console.log(data.message);
+        if (response.ok) {
             window.location.reload()
         }
     } catch (error) {
